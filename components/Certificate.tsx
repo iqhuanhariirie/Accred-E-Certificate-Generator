@@ -76,7 +76,7 @@ const Certificate = ({
     },
     text: {
       textAlign: "center",
-      fontSize: 48 * scaleFactor,
+      fontSize: 120 * scaleFactor,
       fontWeight: "bold",
       color: textColor,
     },
