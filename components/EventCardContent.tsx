@@ -65,6 +65,8 @@ export const EventCardContent = ({
   if (user === null) {
     return <GuestLoginButton />;
   } else if (userInGuestList) {
+    const foundGuest = guestList.find((person) => person.email === user.email);
+    
     return (
       <>
         <div className="flex flex-col gap-2 w-5/12">
@@ -72,10 +74,12 @@ export const EventCardContent = ({
             document={
               <Certificate
                 certificateTemplate={certificateTemplate}
-                guestName={user?.displayName || ""}
+                guestName={foundGuest ? foundGuest.name : ""}
               />
             }
-            fileName={`${user?.displayName}_certificate` || "certficate"}
+            fileName={`${
+							foundGuest ? foundGuest.name : "certificate"
+						}_certificate`}
           >
             {({ loading }) =>
               loading ? (
