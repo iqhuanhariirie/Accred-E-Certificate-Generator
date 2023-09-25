@@ -49,7 +49,7 @@ export const EventCardContent = ({
       const eventYear = date.getFullYear();
       const eventMonth = date.getMonth() + 1;
       const shareURL = generateLinkedInShareURL({
-        orgName: "Google Developer Student Clubs University of the East",
+        orgName: "Google Developer Student Clubs - University of the East Caloocan",
         certTitle: eventName,
         certYear: eventYear,
         certMonth: eventMonth,
