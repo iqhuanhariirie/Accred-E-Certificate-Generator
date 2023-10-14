@@ -1,4 +1,4 @@
-# Accred - An Event E-Certificate Generator Web App 🎖️
+# Accred - Event E-Certificate Generator Web App 🎖️
 
 ![Accred Logo](https://i.imgur.com/gKwYMID.png)
 ![Commit Shield](https://img.shields.io/github/last-commit/blurridge/Accred?style=for-the-badge)
