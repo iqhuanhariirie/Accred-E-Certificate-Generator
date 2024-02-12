@@ -69,7 +69,7 @@ export const EventCardContent = ({
     
     return (
       <>
-        <div className="flex flex-col gap-2 w-5/12">
+        <div className="flex flex-col w-5/12 gap-2">
           <PDFDownloadLink
             document={
               <Certificate
@@ -79,7 +79,7 @@ export const EventCardContent = ({
             }
             fileName={`${
 							foundGuest ? foundGuest.name : "certificate"
-						}_certificate`}
+						}_certificate.pdf`}
           >
             {({ loading }) =>
               loading ? (
