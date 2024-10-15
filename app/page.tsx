@@ -27,7 +27,7 @@ export default function Home() {
 						e-certificates on demand.
 					</span>
 					<div className="mt-4 flex gap-5">
-						<Link href="/docs" legacyBehavior passHref>
+						<Link href="/admin" legacyBehavior passHref>
 							<Button>Get Started</Button>
 						</Link>
 						<Link href="/contact" legacyBehavior passHref>
