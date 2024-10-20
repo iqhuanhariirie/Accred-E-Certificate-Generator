@@ -154,6 +154,8 @@ export const EventForm = ({
 
   // Define a submit handler.
   const onSubmit = async (payload: FormType) => {
+    console.log("Payload before sending to Firestore:", payload);
+  
     if (id) {
       await editDocumentInFirestore({ payload, id });
     } else {

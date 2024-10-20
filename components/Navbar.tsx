@@ -82,7 +82,7 @@ export const AdminNavbar = () => {
         </Avatar>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button>
+            <button title="User Menu">
               <ChevronDown />
             </button>
           </DropdownMenuTrigger>
@@ -163,7 +163,7 @@ export const GuestNavbar = () => {
             </Avatar>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button>
+                <button title="User Menu">
                   <ChevronDown />
                 </button>
               </DropdownMenuTrigger>

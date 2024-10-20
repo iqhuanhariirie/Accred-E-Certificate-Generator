@@ -7,6 +7,7 @@ export const parseCSV = (csvFile: any): Promise<Guest[]> => {
     Papa.parse(csvFile, {
       header: true, // Should be enabled to be able to support csvs with different column orders
       complete: ({ data: csvData }: ParseResult<{ email: string, name: string }>) => {
+        console.log("Raw CSV Data:", csvData); // Add this log to inspect raw CSV data
         // Filter out empty rows
         const nonEmptyRows =
           // 1. Convert the object into 2d arrays (e.g. { email: hello@foo.com, name: Foo } -> [[email, hello@foo.com], [name, Foo]])
@@ -15,6 +16,7 @@ export const parseCSV = (csvFile: any): Promise<Guest[]> => {
             .filter(row => row.every(r => r[1].trim().length != 0))
           // 3. Convert the 2d arrays back into objects
             .map<typeof csvData[0]>(Object.fromEntries);
+            console.log("Non-empty Rows:", nonEmptyRows); // Log the filtered non-empty rows
 
         // Convert each row of the CSV into a Guest object
         const guests: Guest[] = nonEmptyRows.map((row) => ({
@@ -23,9 +25,12 @@ export const parseCSV = (csvFile: any): Promise<Guest[]> => {
           email: row.email,
         }));
 
+        console.log("Parsed Guests:", guests); // Log the parsed guest list
+
         resolve(guests);
       },
       error: (error: any) => {
+        console.error("CSV Parsing Error:", error);
         reject(error);
       },
     });

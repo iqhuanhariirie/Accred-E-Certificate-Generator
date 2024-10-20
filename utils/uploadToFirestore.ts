@@ -31,15 +31,20 @@ export type FilePayload = {
 
 export const sendDocumentToFirestore = async (payload: FormType) => {
   try {
+    console.log("Payload received in sendDocumentToFirestore:", payload);
+
     const parsedGuestList: Guest[] = await parseCSV(payload.guestList); // Convert .csv file to JSON format
     const initialPayload: InitialPayload = {
-      // Initial payload are non-file uploads.
-      eventName: payload.eventName,
-      description: payload.description,
-      eventDate: Timestamp.fromDate(payload.eventDate),
-      guestList: parsedGuestList,
+      eventName: payload.eventName || "", // Ensure eventName is not undefined
+      description: payload.description || "", // Ensure description is not undefined
+      eventDate: payload.eventDate ? Timestamp.fromDate(payload.eventDate) : Timestamp.now(), // Ensure eventDate is not undefined
+      guestList: parsedGuestList || [], // Ensure guestList is not undefined
     };
+
+    console.log("Initial payload before adding to Firestore:", initialPayload);
+
     const eventDocRef = await addDoc(collection(db, "events"), initialPayload); // Once payload has been added, proceed to storage file uploads.
+    
     // Compress event banner to ensure fast loading of event page. It is blurred so losing quality is fine.
     const compressedBanner = await compressBanner(payload.eventBanner);
     const eventBannerURL: string = await uploadPhoto(
@@ -56,6 +61,9 @@ export const sendDocumentToFirestore = async (payload: FormType) => {
       eventBanner: eventBannerURL,
       certificateTemplate: certificateTemplateURL,
     };
+
+    console.log("File payload before updating Firestore:", filePayload);
+
     await updateDoc(eventDocRef, filePayload); // Update document using eventDocRef so downloadURLs to files are added to Firestore doc.
     console.log("Event successfully uploaded to Firebase!");
   } catch (error: any) {
