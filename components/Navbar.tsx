@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import accredLogo from "@/assets/accred_logo.svg";
+import uitmLogo from "@/assets/UiTM Logo Vector.svg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -29,10 +29,9 @@ export const AdminNavbar = () => {
     <nav className="flex bg-white drop-shadow-xl p-5 justify-between dark:bg-[#080E1D]">
       <div className="flex gap-5">
         <Image
-          src={accredLogo}
+          src={uitmLogo}
           width={70}
-          alt="Accred Logo"
-          className="dark:invert"
+          alt="UITM Logo"
           priority
         />
         <NavigationMenu>
@@ -102,10 +101,9 @@ export const GuestNavbar = () => {
     <nav className="flex bg-white drop-shadow-xl p-5 justify-between dark:bg-[#080E1D]">
       <div className="flex gap-5">
         <Image
-          src={accredLogo}
+          src={uitmLogo}
           width={70}
-          alt="Accred Logo"
-          className="dark:invert"
+          alt="UITM Logo"
           priority
         />
         <NavigationMenu>

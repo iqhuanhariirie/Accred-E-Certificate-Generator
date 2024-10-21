@@ -1,6 +1,6 @@
 "use client";
 
-import accredSq from "@/assets/accred_sq.svg";
+import uitmLogo from "@/assets/UiTM Logo Vector.svg";
 import { AdminLoginButton } from "@/components/AdminLoginButton";
 import { RingLoader } from "@/components/RingLoader";
 import {
@@ -28,41 +28,19 @@ export const LoginCard = () => {
 				<Card className="w-96 flex flex-col items-center justify-center ">
 					<CardHeader className="flex flex-col items-center justify-center gap-3">
 						<Image
-							src={accredSq}
+							src={uitmLogo}
 							width={200}
-							alt="Accred Dark Logo"
-							className="dark:invert"
+							alt="UITM Logo"
 							priority
 						/>
 						<CardTitle className="text-center">
-							Event E-Certificate Generator Admin Page
+							Event E-Certificate System Admin Page
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="text-center">
 						<AdminLoginButton />
 					</CardContent>
-					<CardFooter>
-						<p className="m-auto text-center text-gray-500">
-							© {currentYear} Made with 🖤 by{" "}
-							<a
-								href="https://github.com/blurridge"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								@blurridge
-							</a>{" "}
-							|{" "}
-							<a
-								href="https://www.linkedin.com/in/zachriane/"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="hover:underline"
-							>
-								Zach Riane Machacon
-							</a>
-						</p>
-					</CardFooter>
+					
 				</Card>
 			</>
 		);

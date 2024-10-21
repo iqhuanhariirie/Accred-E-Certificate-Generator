@@ -1,4 +1,3 @@
-import accredLogo from "@/assets/accred_logo.svg";
 import uitmLogo from "@/assets/UiTM Logo Vector.svg";
 import { FeatureCards } from "@/components/FeatureCards";
 import { Footer } from "@/components/Footer";
@@ -29,9 +28,6 @@ export default function Home() {
 					<div className="mt-4 flex gap-5">
 						<Link href="/admin" legacyBehavior passHref>
 							<Button>Get Started</Button>
-						</Link>
-						<Link href="/contact" legacyBehavior passHref>
-							<Button>Subscribe</Button>
 						</Link>
 					</div>
 				</section>
