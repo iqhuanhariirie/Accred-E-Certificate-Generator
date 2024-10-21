@@ -50,13 +50,7 @@ export const AdminNavbar = () => {
                 </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/contact" legacyBehavior passHref>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Contact Us
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
+            
             <NavigationMenuItem>
               <button
                 onClick={() =>
@@ -131,13 +125,7 @@ export const GuestNavbar = () => {
                 </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href="/contact" legacyBehavior passHref>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Contact Us
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
+            
             <NavigationMenuItem>
               <button
                 onClick={() =>
