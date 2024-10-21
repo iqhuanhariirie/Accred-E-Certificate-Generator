@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Accred",
-  description: "An E-Certificate Generator by @blurridge",
+  title: "UITM KT E-Certificate System",
+  description: "An E-Certificate System",
 };
 
 export default function RootLayout({

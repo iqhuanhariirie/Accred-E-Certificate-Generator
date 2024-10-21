@@ -1,6 +1,6 @@
 "use client";
 
-import accredLs from "@/assets/accred_ls.svg";
+import uitmLogo from "@/assets/UiTM Logo Vector.svg";
 import AdminGuide from "@/components/AdminGuide.mdx";
 import Image from "next/image";
 
@@ -10,10 +10,10 @@ const Page = () => {
 			<article className="px-10 prose dark:prose-invert py-10 m-auto">
 				<div className="px-10 flex flex-col justify-center items-center">
 					<Image
-						src={accredLs}
+						src={uitmLogo}
 						width={500}
-						alt="Accred Dark Logo"
-						className="mx-auto dark:invert"
+						alt="UITM Logo"
+						
 						priority
 					/>
 				</div>
