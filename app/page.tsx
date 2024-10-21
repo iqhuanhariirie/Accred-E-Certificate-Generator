@@ -1,4 +1,5 @@
 import accredLogo from "@/assets/accred_logo.svg";
+import uitmLogo from "@/assets/UiTM Logo Vector.svg";
 import { FeatureCards } from "@/components/FeatureCards";
 import { Footer } from "@/components/Footer";
 import { GuestNavbar } from "@/components/Navbar";
@@ -13,10 +14,9 @@ export default function Home() {
 				<GuestNavbar />
 				<section className="py-16 px-10 flex flex-col items-center mx-auto h-screen ">
 					<Image
-						src={accredLogo}
+						src={uitmLogo}
 						width={350}
-						alt="Accred Logo"
-						className="dark:invert"
+						alt="UITM Logo"
 						priority
 					/>
 					<span className="font-bold text-5xl text-center w-11/12 leading-snug">
