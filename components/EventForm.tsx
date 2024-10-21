@@ -281,7 +281,7 @@ export const EventForm = ({
           name="guestList"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Guest List</FormLabel>
+              <FormLabel>Participant List</FormLabel>
               <FormControl>
                 <Input type="file" onChange={handleGuestList} />
               </FormControl>
