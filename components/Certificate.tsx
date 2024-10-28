@@ -12,13 +12,24 @@ import {
 import { useEffect, useState } from "react";
 import { fetchDominantColorFromImage } from "@/utils/fetchDominantColorFromImage";
 import { getTextColor } from "@/utils/getTextColor";
+import { Timestamp } from "firebase/firestore";
 
 const Certificate = ({
+  eventDate,
   certificateTemplate,
   guestName,
+  studentID,
+  course,
+  part,
+  group
 }: {
+  eventDate: Timestamp;
   certificateTemplate: string;
   guestName: string;
+  studentID: string;
+  course: string;
+  part: number;
+  group: string;
 }) => {
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [backgroundColor, setBackgroundColor] = useState({ r: 0, g: 0, b: 0 });
@@ -89,6 +100,11 @@ const Certificate = ({
           <Image src={certificateTemplate} style={styles.image} />
           <View style={styles.textContainer}>
             <Text style={styles.text}>{guestName}</Text>
+            <Text style={styles.text}>{studentID}</Text>
+            <Text style={styles.text}>{course}</Text>
+            <Text style={styles.text}>{part}</Text>
+            <Text style={styles.text}>{group}</Text>
+            <Text style={styles.text}>{eventDate.toDate().toLocaleDateString()}</Text>
           </View>
         </View>
       </Page>

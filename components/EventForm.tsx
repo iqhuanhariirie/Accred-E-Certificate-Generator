@@ -170,6 +170,7 @@ export const EventForm = ({
   const handleGuestList = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const file = event.target.files[0]; // Get the selected file
+      console.log(file);
       form.setValue("guestList", file); // Set the file as the value of guestList field
       form.trigger("guestList"); // Manually triggering validation because of custom <Input /> component
     }

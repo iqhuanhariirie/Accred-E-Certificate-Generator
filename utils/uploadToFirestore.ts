@@ -12,8 +12,12 @@ import {
 } from "firebase/firestore";
 
 export type Guest = {
-  name: string;
   email: string;
+  name: string;
+  studentID: string;
+  course: string;
+  part: number;
+  group: string;
   certId: string;
 };
 

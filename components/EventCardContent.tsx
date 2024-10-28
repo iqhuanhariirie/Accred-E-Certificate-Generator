@@ -75,7 +75,11 @@ export const EventCardContent = ({
               <Certificate
                 certificateTemplate={certificateTemplate}
                 guestName={foundGuest ? foundGuest.name : ""}
-              />
+                studentID={foundGuest ? foundGuest.studentID : ""}
+                course={foundGuest ? foundGuest.course : ""}
+                part={foundGuest ? foundGuest.part : 0}
+                group={foundGuest ? foundGuest.group : ""} 
+                eventDate={eventDate}              />
             }
             fileName={`${
 							foundGuest ? foundGuest.name : "certificate"
