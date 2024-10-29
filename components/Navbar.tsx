@@ -50,6 +50,13 @@ export const AdminNavbar = () => {
                 </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link href="/club" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Club
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
             
             <NavigationMenuItem>
               <button
@@ -117,6 +124,15 @@ export const GuestNavbar = () => {
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
+            ) : null}
+            {user && checkIfUserIsAdmin(user) ? (
+              <NavigationMenuItem>
+              <Link href="/club" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Club
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
             ) : null}
             <NavigationMenuItem>
               <Link href="/docs" legacyBehavior passHref>
