@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { db } from "@/firebase/config";
 import { PDFViewer } from "@react-pdf/renderer";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 import { useEffect, useRef, useState } from "react";
 
 type CertificateDataProps = {
@@ -19,6 +19,11 @@ type CertificateDataProps = {
   name: string;
   certId: string;
   certificateTemplate: string;
+  studentID: string;
+  course: string;
+  part: number;
+  group: string;
+  eventDate: Timestamp;
 };
 
 export const CertificateVerifier = ({
@@ -33,10 +38,15 @@ export const CertificateVerifier = ({
     name: "",
     certId: "",
     certificateTemplate: "",
+    studentID: "",
+    course: "",
+    part: 0,
+    group: "",
+    eventDate: Timestamp.now(),
   });
   const [loading, setLoading] = useState<boolean>(true);
   const eventName = useRef<string>("");
-  const eventDate = useRef<string>("");
+  const [documentEventDate, setDocumentEventDate] = useState<Timestamp | null>(null);
   useEffect(() => {
     const checkCertificate = async () => {
       setLoading(true);
@@ -44,12 +54,8 @@ export const CertificateVerifier = ({
       const eventDoc = await getDoc(docRef);
       if (eventDoc.exists()) {
         eventName.current = eventDoc.data().eventName || "";
-        eventDate.current =
-          eventDoc.data().eventDate.toDate().toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          }) || "";
+        const timestamp = eventDoc.data().eventDate;
+        setDocumentEventDate(timestamp);
         const certificateTemplate = eventDoc.data().certificateTemplate || "";
         const guestList = eventDoc.data().guestList || [];
         // Check if certId exists in guestList
@@ -57,19 +63,22 @@ export const CertificateVerifier = ({
           (guest: CertificateDataProps) => guest.certId === certId
         );
         if (matchingCert) {
-          const { email, name, certId } = matchingCert;
-          setCertificate({
-            email,
-            name,
-            certId,
-            certificateTemplate,
-          });
+          setCertificate(matchingCert);
         }
       }
       setLoading(false);
     };
     checkCertificate();
   }, []);
+  // Function to format date
+  const formatDate = (timestamp: Timestamp | null) => {
+    if (!timestamp) return "";
+    return timestamp.toDate().toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
   if (loading) {
     return (
       <div className="h-full w-full flex items-center justify-center">
@@ -105,12 +114,17 @@ export const CertificateVerifier = ({
           <div className="h-full w-full flex flex-col items-center justify-center gap-3">
             <span className="font-semibold text-xl">
               ✨ Congratulations, {certificate.name} for participating in{" "}
-              {eventName.current} last {eventDate.current}! ✨
+              {eventName.current} last {formatDate(documentEventDate)}! ✨
             </span>
             <PDFViewer width={"80%"} height={"90%"}>
               <Certificate
                 certificateTemplate={certificate.certificateTemplate}
                 guestName={certificate.name}
+                studentID={certificate.studentID}
+                course={certificate.course}
+                part={certificate.part}
+                group={certificate.group}
+                eventDate={documentEventDate || new Timestamp(0, 0)}
               />
             </PDFViewer>
           </div>

@@ -104,7 +104,11 @@ const Certificate = ({
             <Text style={styles.text}>{course}</Text>
             <Text style={styles.text}>{part}</Text>
             <Text style={styles.text}>{group}</Text>
-            <Text style={styles.text}>{eventDate.toDate().toLocaleDateString()}</Text>
+            <Text style={styles.text}>{eventDate.toDate().toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}</Text>
           </View>
         </View>
       </Page>
