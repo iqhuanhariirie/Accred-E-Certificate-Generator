@@ -24,10 +24,12 @@ type CertificateDataProps = {
   part: number;
   group: string;
   eventDate: Timestamp;
+  signature?: string;  // Add signature field
+  signatureTimestamp?: Timestamp; // Optional: if you want to store when it was signed
 };
 
 export const CertificateVerifier = ({
-  id,
+  id,  // This is your eventId
   certId,
 }: {
   id: string;
@@ -43,10 +45,12 @@ export const CertificateVerifier = ({
     part: 0,
     group: "",
     eventDate: Timestamp.now(),
+    signature: "",  // Add default value
   });
   const [loading, setLoading] = useState<boolean>(true);
   const eventName = useRef<string>("");
   const [documentEventDate, setDocumentEventDate] = useState<Timestamp | null>(null);
+
   useEffect(() => {
     const checkCertificate = async () => {
       setLoading(true);
@@ -70,6 +74,7 @@ export const CertificateVerifier = ({
     };
     checkCertificate();
   }, []);
+
   // Function to format date
   const formatDate = (timestamp: Timestamp | null) => {
     if (!timestamp) return "";
@@ -79,6 +84,7 @@ export const CertificateVerifier = ({
       year: "numeric",
     });
   };
+
   if (loading) {
     return (
       <div className="h-full w-full flex items-center justify-center">
@@ -117,19 +123,34 @@ export const CertificateVerifier = ({
               {eventName.current} last {formatDate(documentEventDate)}! ✨
             </span>
             <PDFViewer width={"80%"} height={"90%"}>
-              <Certificate
-                certificateTemplate={certificate.certificateTemplate}
-                guestName={certificate.name}
-                studentID={certificate.studentID}
-                course={certificate.course}
-                part={certificate.part}
-                group={certificate.group}
-                eventDate={documentEventDate || new Timestamp(0, 0)}
-              />
-            </PDFViewer>
+            <Certificate
+              certificateTemplate={certificate.certificateTemplate}
+              guestName={certificate.name}
+              studentID={certificate.studentID}
+              course={certificate.course}
+              part={certificate.part}
+              group={certificate.group}
+              eventDate={documentEventDate || new Timestamp(0, 0)}
+              signature={certificate.signature}
+              eventId={id}
+              certId={certId}
+              guest={{
+                name: certificate.name,
+                email: certificate.email,
+                studentID: certificate.studentID,
+                course: certificate.course,
+                part: certificate.part,
+                group: certificate.group,
+                signature: certificate.signature,
+                signatureTimestamp: certificate.signatureTimestamp,
+                certId: certificate.certId
+              }}
+            />
+          </PDFViewer>
           </div>
         </div>
       </>
     );
   }
 };
+

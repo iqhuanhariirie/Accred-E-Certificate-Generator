@@ -154,6 +154,7 @@ export const EventForm = ({
 
   // Define a submit handler.
   const onSubmit = async (payload: FormType) => {
+    try{
     console.log("Payload before sending to Firestore:", payload);
   
     if (id) {
@@ -165,6 +166,10 @@ export const EventForm = ({
     if (handleDropdownClose !== undefined) {
       handleDropdownClose();
     }
+  } catch (error) {
+    console.error("Error during form submission:", error);
+    // Add error handling/notification here
+  }
   };
 
   const handleGuestList = (event: React.ChangeEvent<HTMLInputElement>) => {

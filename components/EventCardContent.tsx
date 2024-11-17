@@ -11,17 +11,21 @@ import { User } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
 import { useRef } from "react";
 
+interface EventCardContentProps {
+  guestList: Guest[];
+  certificateTemplate: string;
+  eventName: string;
+  eventDate: Timestamp;
+  eventId: string;
+}
+
 export const EventCardContent = ({
   guestList,
   certificateTemplate,
   eventName,
   eventDate,
-}: {
-  guestList: Guest[];
-  certificateTemplate: string;
-  eventName: string;
-  eventDate: Timestamp;
-}) => {
+  eventId,
+}: EventCardContentProps) => {
   const { logOut, user } = useAuth();
   const certId = useRef<string>("");
 
@@ -66,7 +70,7 @@ export const EventCardContent = ({
     return <GuestLoginButton />;
   } else if (userInGuestList) {
     const foundGuest = guestList.find((person) => person.email === user.email);
-    
+
     return (
       <>
         <div className="flex flex-col w-5/12 gap-2">
@@ -74,16 +78,19 @@ export const EventCardContent = ({
             document={
               <Certificate
                 certificateTemplate={certificateTemplate}
-                guestName={foundGuest ? foundGuest.name : ""}
-                studentID={foundGuest ? foundGuest.studentID : ""}
-                course={foundGuest ? foundGuest.course : ""}
-                part={foundGuest ? foundGuest.part : 0}
-                group={foundGuest ? foundGuest.group : ""} 
-                eventDate={eventDate}              />
+                guestName={foundGuest?.name || ""}
+                studentID={foundGuest?.studentID || ""}
+                course={foundGuest?.course || ""}
+                part={foundGuest?.part || 0}
+                group={foundGuest?.group || ""}
+                eventDate={eventDate}
+                signature={foundGuest?.signature}
+                eventId={eventId}
+                certId={foundGuest?.certId || ""}
+                guest={foundGuest!} // Add this line
+              />
             }
-            fileName={`${
-							foundGuest ? foundGuest.name : "certificate"
-						}_certificate.pdf`}
+            fileName={`${foundGuest?.name || "certificate"}_certificate.pdf`}
           >
             {({ loading }) =>
               loading ? (

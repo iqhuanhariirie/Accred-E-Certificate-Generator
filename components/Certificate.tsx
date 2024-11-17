@@ -13,6 +13,23 @@ import { useEffect, useState } from "react";
 import { fetchDominantColorFromImage } from "@/utils/fetchDominantColorFromImage";
 import { getTextColor } from "@/utils/getTextColor";
 import { Timestamp } from "firebase/firestore";
+import QRCode from "qrcode";
+import { prepareCertificateData, verifyCertificate } from "@/utils/signatureUtils";
+import { Guest } from "@/utils/uploadToFirestore";
+
+interface CertificateProps {
+  eventDate: Timestamp;
+  certificateTemplate: string;
+  guestName: string;
+  studentID: string;
+  course: string;
+  part: number;
+  group: string;
+  signature?: string;
+  eventId: string;
+  certId: string;
+  guest: Guest;
+}
 
 const Certificate = ({
   eventDate,
@@ -21,38 +38,50 @@ const Certificate = ({
   studentID,
   course,
   part,
-  group
-}: {
-  eventDate: Timestamp;
-  certificateTemplate: string;
-  guestName: string;
-  studentID: string;
-  course: string;
-  part: number;
-  group: string;
-}) => {
+  group,
+  signature,
+  eventId,
+  certId,
+  guest
+}: CertificateProps) => {
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [backgroundColor, setBackgroundColor] = useState({ r: 0, g: 0, b: 0 });
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [isVerified, setIsVerified] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const getImageSize = async () => {
+    const initializeCertificate = async () => {
       const size = await fetchImageSize(certificateTemplate);
       setImageSize(size);
-    };
-    const getBackgroundColor = async () => {
+      
       const color = await fetchDominantColorFromImage(certificateTemplate);
       setBackgroundColor(color);
-    };
-    getImageSize(); // Gets image size of certificate from Firebase URL
-    getBackgroundColor(); // Gets dominant color of the certificate to ensure the text is better as black or white design-wise
-  }, [certificateTemplate]);
 
-  if (imageSize.width === 0 || imageSize.height === 0) {
-    return null; // Render nothing until imageSize is fetched
+      const verificationUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/verify/${eventId}/${certId}`;
+      const qrCode = await QRCode.toDataURL(verificationUrl);
+      setQrCodeUrl(qrCode);
+
+      if (signature) {
+        const certificateData = prepareCertificateData(
+          guest,
+          eventId,
+          eventDate.toDate(),
+          certificateTemplate
+        );
+        const verified = await verifyCertificate(certificateData, signature);
+        setIsVerified(verified);
+      }
+    };
+
+    initializeCertificate();
+  }, [certificateTemplate, eventId, certId, signature, guest, eventDate]);
+
+  if (imageSize.width === 0 || imageSize.height === 0 || !qrCodeUrl) {
+    return null;
   }
 
   const { width, height } = imageSize;
-  const scaleFactor = Math.min(width, height) / 1500; // Adjust this factor as needed
+  const scaleFactor = Math.min(width, height) / 1500;
   const textColor = getTextColor(
     backgroundColor.r,
     backgroundColor.g,
@@ -67,9 +96,6 @@ const Certificate = ({
     wrapper: {
       flex: 1,
       position: "relative",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
     },
     image: {
       width: "100%",
@@ -91,6 +117,34 @@ const Certificate = ({
       fontWeight: "bold",
       color: textColor,
     },
+    verificationContainer: {
+      position: "absolute",
+      bottom: 20,
+      right: 20,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-end",
+    },
+    signatureText: {
+      fontSize: 8 * scaleFactor,
+      color: textColor,
+      marginBottom: 5,
+    },
+    verificationStatusText: {
+      fontSize: 8 * scaleFactor,
+      color: textColor,
+      marginBottom: 5,
+      fontWeight: "bold",
+    },
+    qrCode: {
+      width: 80 * scaleFactor,
+      height: 80 * scaleFactor,
+    },
+    verificationText: {
+      fontSize: 6 * scaleFactor,
+      color: textColor,
+      marginTop: 5,
+    }
   });
 
   return (
@@ -104,11 +158,30 @@ const Certificate = ({
             <Text style={styles.text}>{course}</Text>
             <Text style={styles.text}>{part}</Text>
             <Text style={styles.text}>{group}</Text>
-            <Text style={styles.text}>{eventDate.toDate().toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}</Text>
+            <Text style={styles.text}>
+              {eventDate.toDate().toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </Text>
+          </View>
+          
+          <View style={styles.verificationContainer}>
+            {signature && (
+              <>
+                <Text style={styles.verificationStatusText}>
+                  Status: {isVerified ? "✓ Verified" : "⚠ Verification Pending"}
+                </Text>
+                <Text style={styles.signatureText}>
+                  Digital Signature: {signature.slice(0, 8)}...{signature.slice(-8)}
+                </Text>
+              </>
+            )}
+            <Image src={qrCodeUrl} style={styles.qrCode} />
+            <Text style={styles.verificationText}>
+              Scan to verify certificate authenticity
+            </Text>
           </View>
         </View>
       </Page>

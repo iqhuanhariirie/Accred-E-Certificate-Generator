@@ -114,6 +114,7 @@ export const EventCard = ({ id }: { id: string }) => {
                         eventCardData?.eventDate ||
                         Timestamp.fromDate(new Date())
                       }
+                      eventId={id}
                     />
                   </CardContent>
                 </Card>
@@ -125,3 +126,4 @@ export const EventCard = ({ id }: { id: string }) => {
     );
   }
 };
+

@@ -3,12 +3,14 @@ import { db } from "@/firebase/config";
 import { compressBanner } from "@/utils/compressBanner";
 import { parseCSV } from "@/utils/parseCSV";
 import { uploadPhoto } from "@/utils/uploadToStorage";
+import { generateBulkSignatures } from "@/utils/signatureUtils"; 
 import {
   Timestamp,
   addDoc,
   collection,
   doc,
   updateDoc,
+  getDoc,
 } from "firebase/firestore";
 
 export type Guest = {
@@ -19,6 +21,8 @@ export type Guest = {
   part: number;
   group: string;
   certId: string;
+  signature?: string; 
+  signatureTimestamp?: Timestamp; 
 };
 
 export type InitialPayload = {
@@ -37,19 +41,18 @@ export const sendDocumentToFirestore = async (payload: FormType) => {
   try {
     console.log("Payload received in sendDocumentToFirestore:", payload);
 
-    const parsedGuestList: Guest[] = await parseCSV(payload.guestList); // Convert .csv file to JSON format
+    const parsedGuestList: Guest[] = await parseCSV(payload.guestList); 
     const initialPayload: InitialPayload = {
-      eventName: payload.eventName || "", // Ensure eventName is not undefined
-      description: payload.description || "", // Ensure description is not undefined
-      eventDate: payload.eventDate ? Timestamp.fromDate(payload.eventDate) : Timestamp.now(), // Ensure eventDate is not undefined
-      guestList: parsedGuestList || [], // Ensure guestList is not undefined
+      eventName: payload.eventName || "", 
+      description: payload.description || "", 
+      eventDate: payload.eventDate ? Timestamp.fromDate(payload.eventDate) : Timestamp.now(), 
+      guestList: parsedGuestList || [], 
     };
 
     console.log("Initial payload before adding to Firestore:", initialPayload);
 
-    const eventDocRef = await addDoc(collection(db, "events"), initialPayload); // Once payload has been added, proceed to storage file uploads.
+    const eventDocRef = await addDoc(collection(db, "events"), initialPayload); 
     
-    // Compress event banner to ensure fast loading of event page. It is blurred so losing quality is fine.
     const compressedBanner = await compressBanner(payload.eventBanner);
     const eventBannerURL: string = await uploadPhoto(
       eventDocRef.id,
@@ -61,17 +64,27 @@ export const sendDocumentToFirestore = async (payload: FormType) => {
       payload.certificateTemplate,
       "cert"
     );
-    const filePayload: FilePayload = {
+
+    const signedGuestList = await generateBulkSignatures(
+      eventDocRef.id,
+      parsedGuestList,
+      payload.eventDate,
+      certificateTemplateURL
+    );
+
+    const filePayload: FilePayload & { guestList: Guest[] } = {
       eventBanner: eventBannerURL,
       certificateTemplate: certificateTemplateURL,
+      guestList: signedGuestList, 
     };
 
     console.log("File payload before updating Firestore:", filePayload);
 
-    await updateDoc(eventDocRef, filePayload); // Update document using eventDocRef so downloadURLs to files are added to Firestore doc.
-    console.log("Event successfully uploaded to Firebase!");
+    await updateDoc(eventDocRef, filePayload);
+    console.log("Event successfully uploaded to Firebase with signatures!");
   } catch (error: any) {
     console.error("Uploading event error occurred", error.message);
+    throw error; 
   }
 };
 
@@ -85,49 +98,57 @@ export const editDocumentInFirestore = async ({
   try {
     let parsedGuestList: Guest[] | undefined;
     if (payload.guestList !== undefined) {
-      parsedGuestList = await parseCSV(payload.guestList); // Convert .csv file to JSON format
+      parsedGuestList = await parseCSV(payload.guestList); 
     }
 
     const initialPayload: InitialPayload = {
-      // Initial payload are non-file uploads.
       eventName: payload.eventName,
       description: payload.description,
       eventDate: Timestamp.fromDate(payload.eventDate),
     };
 
-    if (parsedGuestList !== undefined) {
-      initialPayload.guestList = parsedGuestList;
-    }
+    const eventDocRef = doc(db, "events", id); 
 
-    const eventDocRef = doc(db, "events", id); // Use the provided ID to reference the existing document in Firestore
-    await updateDoc(eventDocRef, initialPayload); // Update the document with initial payload
+    let certificateTemplateURL = undefined;
+    let eventBannerURL = undefined;
 
     if (payload.eventBanner !== undefined) {
-      // Compress event banner to ensure fast loading of event page. It is blurred so losing quality is fine.
       const compressedBanner = await compressBanner(payload.eventBanner);
-      const eventBannerURL: string = await uploadPhoto(
-        eventDocRef.id,
-        compressedBanner,
-        "banner"
-      );
-      const filePayload: FilePayload = {
-        eventBanner: eventBannerURL,
-      };
-      await updateDoc(eventDocRef, filePayload); // Update the document with the event banner URL
+      eventBannerURL = await uploadPhoto(id, compressedBanner, "banner");
     }
+
     if (payload.certificateTemplate !== undefined) {
-      const certificateTemplateURL: string = await uploadPhoto(
-        eventDocRef.id,
-        payload.certificateTemplate,
-        "cert"
-      );
-      const filePayload: FilePayload = {
-        certificateTemplate: certificateTemplateURL,
-      };
-      await updateDoc(eventDocRef, filePayload); // Update the document with the certificate template URL
+      certificateTemplateURL = await uploadPhoto(id, payload.certificateTemplate, "cert");
     }
-    console.log("Event successfully edited in Firebase!");
+
+    if (parsedGuestList) {
+      const signedGuestList = await generateBulkSignatures(
+        id,
+        parsedGuestList,
+        payload.eventDate,
+        certificateTemplateURL || (await getCurrentCertificateTemplate(id))
+      );
+      initialPayload.guestList = signedGuestList;
+    }
+
+    await updateDoc(eventDocRef, {
+      ...initialPayload,
+      ...(eventBannerURL && { eventBanner: eventBannerURL }),
+      ...(certificateTemplateURL && { certificateTemplate: certificateTemplateURL }),
+    });
+
+    console.log("Event successfully edited in Firebase with updated signatures!");
   } catch (error: any) {
     console.error("Editing event error occurred", error.message);
+    throw error;
   }
 };
+
+async function getCurrentCertificateTemplate(eventId: string): Promise<string> {
+  const docRef = doc(db, "events", eventId);
+  const eventDoc = await getDoc(docRef);
+  if (eventDoc.exists()) {
+    return eventDoc.data()?.certificateTemplate || '';
+  }
+  return '';
+}
