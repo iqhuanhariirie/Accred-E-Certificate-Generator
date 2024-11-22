@@ -53,6 +53,11 @@ export const EventDropdown = ({ eventData }: { eventData: Event }) => {
               <DropdownMenuItem>View Event Page</DropdownMenuItem>
             </a>
           </Link>
+          <Link href={`/event/${eventData.id}/participants`} legacyBehavior>
+            <a target="_blank">
+              <DropdownMenuItem>View Participants</DropdownMenuItem>
+            </a>
+          </Link>
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogTrigger asChild>
               <DropdownMenuItem
@@ -120,3 +125,4 @@ export const EventDropdown = ({ eventData }: { eventData: Event }) => {
     </>
   );
 };
+

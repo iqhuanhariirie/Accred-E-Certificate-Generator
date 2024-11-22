@@ -9,7 +9,7 @@ import { Guest } from "@/utils/uploadToFirestore";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { User } from "firebase/auth";
 import { Timestamp } from "firebase/firestore";
-import { useRef } from "react";
+import { useRef, ReactNode } from "react";
 
 interface EventCardContentProps {
   guestList: Guest[];
@@ -17,6 +17,13 @@ interface EventCardContentProps {
   eventName: string;
   eventDate: Timestamp;
   eventId: string;
+}
+
+interface RenderProps {
+  blob: Blob | null;
+  url: string | null;
+  loading: boolean;
+  error: Error | null;
 }
 
 export const EventCardContent = ({
@@ -71,47 +78,39 @@ export const EventCardContent = ({
   } else if (userInGuestList) {
     const foundGuest = guestList.find((person) => person.email === user.email);
 
+    const renderButton = ({ loading }: RenderProps): ReactNode => (
+      <Button className="w-full" disabled={loading}>
+        {loading ? "Loading PDF..." : "Download PDF"}
+      </Button>
+    );
+
     return (
-      <>
-        <div className="flex flex-col w-5/12 gap-2">
-          <PDFDownloadLink
-            document={
-              <Certificate
-                certificateTemplate={certificateTemplate}
-                guestName={foundGuest?.name || ""}
-                studentID={foundGuest?.studentID || ""}
-                course={foundGuest?.course || ""}
-                part={foundGuest?.part || 0}
-                group={foundGuest?.group || ""}
-                eventDate={eventDate}
-                signature={foundGuest?.signature}
-                eventId={eventId}
-                certId={foundGuest?.certId || ""}
-                guest={foundGuest!} // Add this line
-              />
-            }
-            fileName={`${foundGuest?.name || "certificate"}_certificate.pdf`}
-          >
-            {({ loading }) =>
-              loading ? (
-                <div>
-                  <Button className="w-full" disabled>
-                    Loading PDF...
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  <Button className="w-full">Download PDF</Button>
-                </div>
-              )
-            }
-          </PDFDownloadLink>
-          <Button onClick={handleAddToLinkedIn}>Add to LinkedIn</Button>
-          <Button variant="destructive" onClick={handleLogOut}>
-            Logout
-          </Button>
-        </div>
-      </>
+      <div className="flex flex-col w-5/12 gap-2">
+        <PDFDownloadLink
+          document={
+            <Certificate
+              certificateTemplate={certificateTemplate}
+              guestName={foundGuest?.name || ""}
+              studentID={foundGuest?.studentID || ""}
+              course={foundGuest?.course || ""}
+              part={foundGuest?.part || 0}
+              group={foundGuest?.group || ""}
+              eventDate={eventDate}
+              signature={foundGuest?.signature}
+              eventId={eventId}
+              certId={foundGuest?.certId || ""}
+              guest={foundGuest!}
+            />
+          }
+          fileName={`${foundGuest?.name || "certificate"}_certificate.pdf`}
+        >
+          {renderButton as unknown as ReactNode}
+        </PDFDownloadLink>
+        <Button onClick={handleAddToLinkedIn}>Add to LinkedIn</Button>
+        <Button variant="destructive" onClick={handleLogOut}>
+          Logout
+        </Button>
+      </div>
     );
   } else {
     return (

@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 
 export type EventCardData = InitialPayload & FilePayload;
 
-export const EventCard = ({ id }: { id: string }) => {
+export default function EventCard({ id }: { id: string }) {
   const [eventCardData, setEventCardData] = useState<EventCardData>();
   const [loading, setLoading] = useState<boolean>(true);
   useEffect(() => {
@@ -81,11 +81,9 @@ export const EventCard = ({ id }: { id: string }) => {
       <>
         <div className="h-screen">
           <div
-            style={
-              {
-                "--image-url": `url(${eventCardData?.eventBanner})`,
-              } as React.CSSProperties
-            }
+            style={{
+              "--image-url": `url(${eventCardData?.eventBanner})`,
+            } as React.CSSProperties}
             className="h-full bg-[image:var(--image-url)] bg-center bg-no-repeat bg-cover backdrop-filter"
           >
             <div className="h-full backdrop-blur-md">
@@ -125,5 +123,4 @@ export const EventCard = ({ id }: { id: string }) => {
       </>
     );
   }
-};
-
+}

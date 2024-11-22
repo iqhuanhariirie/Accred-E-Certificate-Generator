@@ -1,7 +1,11 @@
-import { EventCard } from "@/components/EventCard";
+import EventCard from "@/components/EventCard";
 
-const Page = ({ params }: { params: { id: string } }) => {
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function Page({ params }: PageProps) {
   return <EventCard id={params.id} />;
-};
-
-export default Page;
+}

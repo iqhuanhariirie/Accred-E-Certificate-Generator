@@ -42,7 +42,7 @@ const Certificate = ({
   signature,
   eventId,
   certId,
-  guest
+  guest,
 }: CertificateProps) => {
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [backgroundColor, setBackgroundColor] = useState({ r: 0, g: 0, b: 0 });
@@ -53,7 +53,7 @@ const Certificate = ({
     const initializeCertificate = async () => {
       const size = await fetchImageSize(certificateTemplate);
       setImageSize(size);
-      
+
       const color = await fetchDominantColorFromImage(certificateTemplate);
       setBackgroundColor(color);
 
@@ -144,7 +144,7 @@ const Certificate = ({
       fontSize: 6 * scaleFactor,
       color: textColor,
       marginTop: 5,
-    }
+    },
   });
 
   return (
@@ -166,7 +166,7 @@ const Certificate = ({
               })}
             </Text>
           </View>
-          
+
           <View style={styles.verificationContainer}>
             {signature && (
               <>
