@@ -15,7 +15,6 @@ import { getTextColor } from "@/utils/getTextColor";
 import { Timestamp } from "firebase/firestore";
 import QRCode from "qrcode";
 import { prepareCertificateData, verifyCertificate } from "@/utils/signatureUtils";
-import { Guest } from "@/utils/uploadToFirestore";
 
 interface CertificateProps {
   eventDate: Timestamp;
@@ -28,7 +27,7 @@ interface CertificateProps {
   signature?: string;
   eventId: string;
   certId: string;
-  guest: Guest;
+  previewMode?: boolean;
 }
 
 const Certificate = ({
@@ -42,7 +41,7 @@ const Certificate = ({
   signature,
   eventId,
   certId,
-  guest,
+  previewMode = false,
 }: CertificateProps) => {
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [backgroundColor, setBackgroundColor] = useState({ r: 0, g: 0, b: 0 });
@@ -57,13 +56,17 @@ const Certificate = ({
       const color = await fetchDominantColorFromImage(certificateTemplate);
       setBackgroundColor(color);
 
-      const verificationUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/verify/${eventId}/${certId}`;
+      const verificationUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/event/${eventId}/certificate/${certId}`;
       const qrCode = await QRCode.toDataURL(verificationUrl);
       setQrCodeUrl(qrCode);
 
       if (signature) {
         const certificateData = prepareCertificateData(
-          guest,
+          guestName,
+          studentID,
+          course,
+          part,
+          group,
           eventId,
           eventDate.toDate(),
           certificateTemplate
@@ -74,7 +77,18 @@ const Certificate = ({
     };
 
     initializeCertificate();
-  }, [certificateTemplate, eventId, certId, signature, guest, eventDate]);
+  }, [
+    certificateTemplate,
+    eventId,
+    certId,
+    signature,
+    guestName,
+    studentID,
+    course,
+    part,
+    group,
+    eventDate,
+  ]);
 
   if (imageSize.width === 0 || imageSize.height === 0 || !qrCodeUrl) {
     return null;

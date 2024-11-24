@@ -1,7 +1,7 @@
 "use client";
 
 import { DataTableParticipant } from "@/components/DataTableParticipant";
-import { columns } from "./columns";
+import { createColumns } from "./columns";
 import { useEffect, useState } from "react";
 import { db } from "@/firebase/config";
 import { doc, getDoc } from "firebase/firestore";
@@ -12,6 +12,9 @@ export default function ParticipantsPage({ params }: { params: { id: string } })
   const [participants, setParticipants] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventName, setEventName] = useState("");
+
+  // Create columns with eventId
+  const columns = createColumns(params.id);
 
   useEffect(() => {
     const fetchParticipants = async () => {

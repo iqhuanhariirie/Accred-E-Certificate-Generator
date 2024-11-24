@@ -2,7 +2,12 @@ import { Timestamp } from 'firebase/firestore';
 import { Guest } from './uploadToFirestore';
 import { importPublicKey, objectToArrayBuffer } from './cryptoUtils';
 
-interface CertificateData extends Guest {
+interface CertificateData {
+  name: string;
+  studentID: string;
+  course: string;
+  part: number;
+  group: string;
   eventId: string;
   eventDate: string;
   certificateTemplate: string;
@@ -10,13 +15,21 @@ interface CertificateData extends Guest {
 }
 
 export const prepareCertificateData = (
-  guest: Guest,
+  name: string,
+  studentID: string,
+  course: string,
+  part: number,
+  group: string,
   eventId: string,
   eventDate: Date,
   certificateTemplate: string
 ): CertificateData => {
   return {
-    ...guest,
+    name,
+    studentID,
+    course,
+    part,
+    group,
     eventId,
     eventDate: eventDate.toISOString(),
     certificateTemplate,
@@ -34,7 +47,11 @@ export const generateBulkSignatures = async (
     const signedGuests = await Promise.all(
       guestList.map(async (guest) => {
         const certificateData = prepareCertificateData(
-          guest,
+          guest.name,
+          guest.studentID,
+          guest.course,
+          guest.part,
+          guest.group,
           eventId,
           eventDate,
           certificateTemplate
