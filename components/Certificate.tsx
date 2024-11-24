@@ -5,6 +5,7 @@ import {
   Document,
   Image,
   Page,
+  PDFViewer,
   StyleSheet,
   Text,
   View,
@@ -114,6 +115,7 @@ const Certificate = ({
     image: {
       width: "100%",
       height: "100%",
+      objectFit: "contain",
     },
     textContainer: {
       position: "absolute",
@@ -124,12 +126,14 @@ const Certificate = ({
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
+      padding: "20px",
     },
     text: {
       textAlign: "center",
-      fontSize: 120 * scaleFactor,
+      fontSize: Math.min(60 * scaleFactor, 24),
       fontWeight: "bold",
       color: textColor,
+      marginBottom: "10px",
     },
     verificationContainer: {
       position: "absolute",
@@ -138,28 +142,90 @@ const Certificate = ({
       display: "flex",
       flexDirection: "column",
       alignItems: "flex-end",
+      padding: "10px",
     },
     signatureText: {
-      fontSize: 8 * scaleFactor,
+      fontSize: Math.min(8 * scaleFactor, 12),
       color: textColor,
       marginBottom: 5,
     },
     verificationStatusText: {
-      fontSize: 8 * scaleFactor,
+      fontSize: Math.min(8 * scaleFactor, 12),
       color: textColor,
       marginBottom: 5,
       fontWeight: "bold",
     },
     qrCode: {
-      width: 80 * scaleFactor,
-      height: 80 * scaleFactor,
+      width: Math.min(80 * scaleFactor, 100),
+      height: Math.min(80 * scaleFactor, 100),
     },
     verificationText: {
-      fontSize: 6 * scaleFactor,
+      fontSize: Math.min(6 * scaleFactor, 10),
       color: textColor,
       marginTop: 5,
     },
   });
+
+  if (previewMode) {
+    return (
+      <PDFViewer width="100%" height="600px">
+        <Document>
+          <Page size={[width, height]} style={styles.page}>
+            <View style={styles.wrapper}>
+              <Image src={certificateTemplate} style={styles.image} />
+              <View style={styles.textContainer}>
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={styles.text}>{guestName}</Text>
+                </View>
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={styles.text}>{studentID}</Text>
+                </View>
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={styles.text}>{course}</Text>
+                </View>
+                {part && (
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={styles.text}>Part {part}</Text>
+                  </View>
+                )}
+                {group && (
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={styles.text}>{group}</Text>
+                  </View>
+                )}
+                <View style={{ marginBottom: 20 }}>
+                  <Text style={styles.text}>
+                    {eventDate.toDate().toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.verificationContainer}>
+                {signature && (
+                  <>
+                    <Text style={styles.verificationStatusText}>
+                      Status: {isVerified ? "✓ Verified" : "⚠ Verification Pending"}
+                    </Text>
+                    <Text style={styles.signatureText}>
+                      Digital Signature: {signature.slice(0, 8)}...{signature.slice(-8)}
+                    </Text>
+                  </>
+                )}
+                <Image src={qrCodeUrl} style={styles.qrCode} />
+                <Text style={styles.verificationText}>
+                  Scan to verify certificate authenticity
+                </Text>
+              </View>
+            </View>
+          </Page>
+        </Document>
+      </PDFViewer>
+    );
+  }
 
   return (
     <Document>
@@ -167,18 +233,34 @@ const Certificate = ({
         <View style={styles.wrapper}>
           <Image src={certificateTemplate} style={styles.image} />
           <View style={styles.textContainer}>
-            <Text style={styles.text}>{guestName}</Text>
-            <Text style={styles.text}>{studentID}</Text>
-            <Text style={styles.text}>{course}</Text>
-            <Text style={styles.text}>{part}</Text>
-            <Text style={styles.text}>{group}</Text>
-            <Text style={styles.text}>
-              {eventDate.toDate().toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </Text>
+            <View style={{ marginBottom: 20 }}>
+              <Text style={styles.text}>{guestName}</Text>
+            </View>
+            <View style={{ marginBottom: 20 }}>
+              <Text style={styles.text}>{studentID}</Text>
+            </View>
+            <View style={{ marginBottom: 20 }}>
+              <Text style={styles.text}>{course}</Text>
+            </View>
+            {part && (
+              <View style={{ marginBottom: 20 }}>
+                <Text style={styles.text}>Part {part}</Text>
+              </View>
+            )}
+            {group && (
+              <View style={{ marginBottom: 20 }}>
+                <Text style={styles.text}>{group}</Text>
+              </View>
+            )}
+            <View style={{ marginBottom: 20 }}>
+              <Text style={styles.text}>
+                {eventDate.toDate().toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.verificationContainer}>

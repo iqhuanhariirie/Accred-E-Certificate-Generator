@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Certificate from "@/components/Certificate";
+import { Button } from "@/components/ui/button";
 
 interface VerificationData {
   eventName: string;
@@ -32,6 +33,7 @@ export default function VerificationPage({ params }: { params: { id: string; cer
   const [data, setData] = useState<VerificationData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [certificateTemplate, setCertificateTemplate] = useState<string>("");
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     const fetchCertificateData = async () => {
@@ -164,24 +166,24 @@ export default function VerificationPage({ params }: { params: { id: string; cer
         </TabsContent>
 
         <TabsContent value="preview">
-          <div className="w-full aspect-[1.414] bg-white rounded-lg shadow-lg overflow-hidden">
-            {data && certificateTemplate && (
-              <Certificate
-                eventDate={data.eventDate}
-                certificateTemplate={certificateTemplate}
-                guestName={data.participantName}
-                studentID={data.studentId}
-                course={data.course}
-                part={data.part || 0}
-                group={data.group || ""}
-                signature={data.signature}
-                eventId={params.id}
-                certId={params.certId}
-                previewMode={true}
-              />
-            )}
-          </div>
-        </TabsContent>
+  <div className="w-full h-[1000px]"> {/* Match the height with PDFViewer */}
+    {data && certificateTemplate && (
+      <Certificate
+        eventDate={data.eventDate}
+        certificateTemplate={certificateTemplate}
+        guestName={data.participantName}
+        studentID={data.studentId}
+        course={data.course}
+        part={data.part || 0}
+        group={data.group || ""}
+        signature={data.signature}
+        eventId={params.id}
+        certId={params.certId}
+        previewMode={true}
+      />
+    )}
+  </div>
+</TabsContent>
       </Tabs>
     </div>
   );
