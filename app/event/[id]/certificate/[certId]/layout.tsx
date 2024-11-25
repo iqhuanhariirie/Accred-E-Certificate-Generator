@@ -10,7 +10,7 @@ export default function CertificateLayout({
       <main className="flex-grow bg-slate-50 dark:bg-slate-900">
         {children}
       </main>
-      <Footer />
+      
     </div>
   );
 }

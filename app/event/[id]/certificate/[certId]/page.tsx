@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Certificate from "@/components/Certificate";
 import { Button } from "@/components/ui/button";
+import { prepareCertificateData, verifyCertificate } from "@/utils/signatureUtils";
 
 interface VerificationData {
   eventName: string;
@@ -34,6 +35,7 @@ export default function VerificationPage({ params }: { params: { id: string; cer
   const [error, setError] = useState<string | null>(null);
   const [certificateTemplate, setCertificateTemplate] = useState<string>("");
   const [zoom, setZoom] = useState(1);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchCertificateData = async () => {
@@ -80,6 +82,30 @@ export default function VerificationPage({ params }: { params: { id: string; cer
 
     fetchCertificateData();
   }, [params.id, params.certId]);
+
+  const verifySignature = async () => {
+    if (data && data.signature && certificateTemplate) {
+      const certificateData = prepareCertificateData(
+        data.participantName,
+        data.studentId,
+        data.course,
+        data.part || 0,
+        data.group || "",
+        params.id,
+        data.eventDate.toDate(),
+        certificateTemplate
+      );
+      console.log('Certificate Data:', certificateData); // Log the data being verified
+      console.log('Signature:', data.signature); // Log the signature
+      const verified = await verifyCertificate(certificateData, data.signature);
+      console.log('Verification Result:', verified); // Log the verification result
+      setIsVerified(verified);
+    }
+  };
+
+  useEffect(() => {
+    verifySignature();
+  }, [data, certificateTemplate, params.id]);
 
   if (loading) {
     return (
@@ -154,9 +180,13 @@ export default function VerificationPage({ params }: { params: { id: string; cer
                   <div className="font-semibold">Verification Status:</div>
                   <div>
                     {data.signature ? (
-                      <Badge variant="success">Valid Certificate</Badge>
+                      isVerified ? (
+                        <Badge variant="success">Valid Certificate</Badge>
+                      ) : (
+                        <Badge variant="destructive">Invalid Signature</Badge>
+                      )
                     ) : (
-                      <Badge variant="destructive">Invalid Certificate</Badge>
+                      <Badge variant="destructive">No Signature</Badge>
                     )}
                   </div>
                 </div>
@@ -166,25 +196,26 @@ export default function VerificationPage({ params }: { params: { id: string; cer
         </TabsContent>
 
         <TabsContent value="preview">
-  <div className="w-full h-[1000px]"> {/* Match the height with PDFViewer */}
-    {data && certificateTemplate && (
-      <Certificate
-        eventDate={data.eventDate}
-        certificateTemplate={certificateTemplate}
-        guestName={data.participantName}
-        studentID={data.studentId}
-        course={data.course}
-        part={data.part || 0}
-        group={data.group || ""}
-        signature={data.signature}
-        eventId={params.id}
-        certId={params.certId}
-        previewMode={true}
-      />
-    )}
-  </div>
-</TabsContent>
+          <div className="w-full h-[calc(100vh-200px)]"> 
+            {data && certificateTemplate && (
+              <Certificate
+                eventDate={data.eventDate}
+                certificateTemplate={certificateTemplate}
+                guestName={data.participantName}
+                studentID={data.studentId}
+                course={data.course}
+                part={data.part || 0}
+                group={data.group || ""}
+                signature={data.signature}
+                eventId={params.id}
+                certId={params.certId}
+                previewMode={true}
+              />
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+

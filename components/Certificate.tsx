@@ -156,11 +156,11 @@ const Certificate = ({
       fontWeight: "bold",
     },
     qrCode: {
-      width: Math.min(80 * scaleFactor, 100),
-      height: Math.min(80 * scaleFactor, 100),
+      width: Math.min(120 * scaleFactor, 150),
+      height: Math.min(120 * scaleFactor, 150),
     },
     verificationText: {
-      fontSize: Math.min(6 * scaleFactor, 10),
+      fontSize: Math.min(10 * scaleFactor, 14),
       color: textColor,
       marginTop: 5,
     },
