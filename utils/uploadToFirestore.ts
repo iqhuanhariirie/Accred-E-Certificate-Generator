@@ -4,6 +4,7 @@ import { compressBanner } from "@/utils/compressBanner";
 import { parseCSV } from "@/utils/parseCSV";
 import { uploadPhoto } from "@/utils/uploadToStorage";
 import { generateBulkSignatures } from "@/utils/signatureUtils"; 
+import { CertificateData } from './signatureUtils';
 import {
   Timestamp,
   addDoc,
@@ -12,6 +13,11 @@ import {
   updateDoc,
   getDoc,
 } from "firebase/firestore";
+
+interface DocumentData extends CertificateData {
+  timestamp: number;
+  signatureTimestamp?: Timestamp; // Keep this for Firestore
+}
 
 export type Guest = {
   email: string;

@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase/firestore';
 import { Guest } from './uploadToFirestore';
 import { importPublicKey, objectToArrayBuffer } from './cryptoUtils';
 
-interface CertificateData {
+export interface CertificateData {
   name: string;
   studentID: string;
   course: string;
@@ -11,7 +11,7 @@ interface CertificateData {
   eventId: string;
   eventDate: string;
   certificateTemplate: string;
-  timestamp: number;
+  
 }
 
 export const prepareCertificateData = (
@@ -33,7 +33,7 @@ export const prepareCertificateData = (
     eventId,
     eventDate: eventDate.toISOString(),
     certificateTemplate,
-    timestamp: Date.now()
+    
   };
 };
 
@@ -102,11 +102,25 @@ export const verifyCertificate = async (
   signatureBase64: string
 ): Promise<boolean> => {
   try {
+    const verificationData = {
+      name: certificateData.name,
+      studentID: certificateData.studentID,
+      course: certificateData.course,
+      part: certificateData.part,
+      group: certificateData.group,
+      eventId: certificateData.eventId,
+      eventDate: certificateData.eventDate,
+      certificateTemplate: certificateData.certificateTemplate
+    };
+
+    console.log('Verification data structure:', JSON.stringify(verificationData, null, 2));
+    console.log('Verification data buffer:', new TextDecoder().decode(objectToArrayBuffer(verificationData)));
+
     const publicKey = await importPublicKey(
       process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!
     );
 
-    const dataBuffer = objectToArrayBuffer(certificateData);
+    const dataBuffer = objectToArrayBuffer(verificationData);
     const signatureBuffer = str2ab(atob(signatureBase64));
 
     return await window.crypto.subtle.verify(
@@ -124,7 +138,6 @@ export const verifyCertificate = async (
   }
 };
 
-// Helper function to convert string to ArrayBuffer
 function str2ab(str: string): ArrayBuffer {
   const buf = new ArrayBuffer(str.length);
   const bufView = new Uint8Array(buf);

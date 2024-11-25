@@ -36,6 +36,18 @@ export function str2ab(str: string): ArrayBuffer {
 }
 
 export function objectToArrayBuffer(obj: any): ArrayBuffer {
-  const str = JSON.stringify(obj);
+  // Ensure consistent property ordering
+  const orderedObj = {
+    name: obj.name,
+    studentID: obj.studentID,
+    course: obj.course,
+    part: obj.part,
+    group: obj.group,
+    eventId: obj.eventId,
+    eventDate: obj.eventDate,
+    certificateTemplate: obj.certificateTemplate
+  };
+
+  const str = JSON.stringify(orderedObj);
   return new TextEncoder().encode(str);
 }
