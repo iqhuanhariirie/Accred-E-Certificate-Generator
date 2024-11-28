@@ -5,18 +5,19 @@ import { db } from "@/firebase/config";
 import { doc, getDoc } from "firebase/firestore";
 import { RingLoader } from "@/components/RingLoader";
 import { Timestamp } from "firebase/firestore";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
+import { CheckCircle2, XCircle, FileCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Certificate from "@/components/Certificate";
-import { Button } from "@/components/ui/button";
-import { prepareCertificateData, verifyCertificate } from "@/utils/signatureUtils";
+import { verifyCertificate } from "@/utils/signatureUtils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface VerificationData {
   eventName: string;
@@ -29,13 +30,51 @@ interface VerificationData {
   signature?: string;
 }
 
+interface VerificationStep {
+  title: string;
+  description: string;
+  status: 'pending' | 'success' | 'error' | 'loading';
+  details: string | null;
+}
+
 export default function VerificationPage({ params }: { params: { id: string; certId: string } }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<VerificationData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [certificateTemplate, setCertificateTemplate] = useState<string>("");
-  const [zoom, setZoom] = useState(1);
-  const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationSteps, setVerificationSteps] = useState<VerificationStep[]>([
+    {
+      title: "Original Data",
+      description: "Certificate data before hashing",
+      status: 'pending',
+      details: null
+    },
+    {
+      title: "Data Hash",
+      description: "SHA-256 hash of the certificate data",
+      status: 'pending',
+      details: null
+    },
+    {
+      title: "Digital Signature",
+      description: "Encrypted hash using private key",
+      status: 'pending',
+      details: null
+    },
+    {
+      title: "Public Key Verification",
+      description: "Using public key to decrypt signature",
+      status: 'pending',
+      details: null
+    },
+    {
+      title: "Hash Comparison",
+      description: "Comparing original and decrypted hashes",
+      status: 'pending',
+      details: null
+    }
+  ]);
 
   useEffect(() => {
     const fetchCertificateData = async () => {
@@ -62,7 +101,7 @@ export default function VerificationPage({ params }: { params: { id: string; cer
 
         setCertificateTemplate(eventData.certificateTemplate);
 
-        setData({
+        const certificateData = {
           eventName: eventData.eventName,
           eventDate: eventData.eventDate,
           participantName: participant.name,
@@ -71,7 +110,25 @@ export default function VerificationPage({ params }: { params: { id: string; cer
           group: participant.group,
           part: participant.part,
           signature: participant.signature,
-        });
+        };
+
+        setData(certificateData);
+
+        if (participant.signature) {
+          const verifyData = {
+            name: participant.name,
+            studentID: participant.studentID,
+            course: participant.course,
+            part: participant.part,
+            group: participant.group,
+            eventId: params.id,
+            eventDate: eventData.eventDate.toDate().toISOString(),
+            certificateTemplate: eventData.certificateTemplate
+          };
+
+          const verified = await verifyCertificate(verifyData, participant.signature, setVerificationSteps);
+          setIsVerified(verified);
+        }
       } catch (error) {
         console.error("Error fetching certificate data:", error);
         setError("Failed to fetch certificate data");
@@ -82,30 +139,6 @@ export default function VerificationPage({ params }: { params: { id: string; cer
 
     fetchCertificateData();
   }, [params.id, params.certId]);
-
-  const verifySignature = async () => {
-    if (data && data.signature && certificateTemplate) {
-      const certificateData = prepareCertificateData(
-        data.participantName,
-        data.studentId,
-        data.course,
-        data.part || 0,
-        data.group || "",
-        params.id,
-        data.eventDate.toDate(),
-        certificateTemplate
-      );
-      console.log('Certificate Data:', certificateData); // Log the data being verified
-      console.log('Signature:', data.signature); // Log the signature
-      const verified = await verifyCertificate(certificateData, data.signature);
-      console.log('Verification Result:', verified); // Log the verification result
-      setIsVerified(verified);
-    }
-  };
-
-  useEffect(() => {
-    verifySignature();
-  }, [data, certificateTemplate, params.id]);
 
   if (loading) {
     return (
@@ -133,33 +166,35 @@ export default function VerificationPage({ params }: { params: { id: string; cer
   }
 
   return (
-    <div className="container mx-auto py-10 px-4">
+    <div className="container mx-auto py-10 px-4 pb-40">
       <Tabs defaultValue="details" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="details">Certificate Details</TabsTrigger>
           <TabsTrigger value="preview">Certificate Preview</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="details">
           {data && (
-            <Card>
+            <Card className="mb-16">
               <CardHeader>
                 <CardTitle className="text-center">Certificate Verification</CardTitle>
                 <CardDescription className="text-center">
                   {data.eventName}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <CardContent className="overflow-y-auto" 
+              style={{ maxHeight: 'calc(100vh - 100px)' }}>
+                {/* Certificate Details */}
+                <div className="grid grid-cols-2 gap-4 text-sm mb-8">
                   <div className="font-semibold">Event Date:</div>
                   <div>{new Date(data.eventDate.seconds * 1000).toLocaleDateString()}</div>
-                  
+
                   <div className="font-semibold">Participant Name:</div>
                   <div>{data.participantName}</div>
-                  
+
                   <div className="font-semibold">Student ID:</div>
                   <div>{data.studentId}</div>
-                  
+
                   <div className="font-semibold">Course:</div>
                   <div>{data.course}</div>
 
@@ -176,19 +211,59 @@ export default function VerificationPage({ params }: { params: { id: string; cer
                       <div>{data.part}</div>
                     </>
                   )}
-                  
-                  <div className="font-semibold">Verification Status:</div>
-                  <div>
-                    {data.signature ? (
-                      isVerified ? (
-                        <Badge variant="success">Valid Certificate</Badge>
+                </div>
+
+                {/* Digital Signature Verification Process */}
+                <div className="space-y-4 mb-6">
+                  <h3 className="font-semibold text-lg mb-4">Digital Signature Verification Process</h3>
+
+                  {verificationSteps.map((step, index) => (
+  <Alert 
+    key={index} 
+    variant={step.status === 'success' ? 'success' : 
+            step.status === 'error' ? 'destructive' : 
+            'default'}
+    className="mb-4"
+  >
+    <div className="flex items-center gap-3">
+      {step.status === 'success' && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+      {step.status === 'error' && <XCircle className="h-5 w-5 text-red-500" />}
+      {step.status === 'pending' && <div className="h-5 w-5 rounded-full border-2 border-gray-300" />}
+      {step.status === 'loading' && <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-black" />}
+      
+      <div className="w-full">
+        <AlertTitle>{step.title}</AlertTitle>
+        <AlertDescription>{step.description}</AlertDescription>
+        
+        {step.details && (
+          <div className="mt-2 p-2 bg-muted rounded-md text-xs font-mono overflow-x-auto">
+            {step.details}
+          </div>
+        )}
+      </div>
+    </div>
+  </Alert>
+))}
+
+                  {/* Final Verification Status */}
+                  <Alert variant={isVerified ? "success" : "destructive"}>
+                    <div className="mb-6">
+                      {isVerified ? (
+                        <FileCheck className="h-5 w-5" />
                       ) : (
-                        <Badge variant="destructive">Invalid Signature</Badge>
-                      )
-                    ) : (
-                      <Badge variant="destructive">No Signature</Badge>
-                    )}
-                  </div>
+                        <XCircle className="h-5 w-5" />
+                      )}
+                      <div>
+                        <AlertTitle>Final Verification Result</AlertTitle>
+                        <AlertDescription>
+                          {isVerified
+                            ? "Certificate signature is valid and has not been tampered with."
+                            : "Certificate signature is invalid or has been tampered with."
+                          }
+                        </AlertDescription>
+                      </div>
+                    </div>
+                  </Alert>
                 </div>
               </CardContent>
             </Card>
@@ -196,7 +271,7 @@ export default function VerificationPage({ params }: { params: { id: string; cer
         </TabsContent>
 
         <TabsContent value="preview">
-          <div className="w-full h-[calc(100vh-200px)]"> 
+          <div className="w-full h-[calc(100vh-200px)]">
             {data && certificateTemplate && (
               <Certificate
                 eventDate={data.eventDate}
@@ -218,4 +293,3 @@ export default function VerificationPage({ params }: { params: { id: string; cer
     </div>
   );
 }
-

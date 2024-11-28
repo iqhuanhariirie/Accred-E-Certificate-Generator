@@ -1,3 +1,4 @@
+import React from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { Guest } from './uploadToFirestore';
 import { importPublicKey, objectToArrayBuffer } from './cryptoUtils';
@@ -11,7 +12,6 @@ export interface CertificateData {
   eventId: string;
   eventDate: string;
   certificateTemplate: string;
-  
 }
 
 export const prepareCertificateData = (
@@ -33,7 +33,6 @@ export const prepareCertificateData = (
     eventId,
     eventDate: eventDate.toISOString(),
     certificateTemplate,
-    
   };
 };
 
@@ -62,7 +61,7 @@ export const generateBulkSignatures = async (
         return {
           ...guest,
           signature,
-          signatureTimestamp: Timestamp.now()
+          signatureTimestamp: Timestamp.now(),
         };
       })
     );
@@ -97,33 +96,68 @@ const signCertificate = async (certificateData: CertificateData): Promise<string
   }
 };
 
+interface VerificationStep {
+  title: string;
+  description: string;
+  status: 'pending' | 'success' | 'error' | 'loading';
+  details: string | null;
+}
+
+type SetVerificationSteps = React.Dispatch<React.SetStateAction<VerificationStep[]>>;
+
 export const verifyCertificate = async (
   certificateData: CertificateData,
-  signatureBase64: string
+  signatureBase64: string,
+  setVerificationSteps?: SetVerificationSteps
 ): Promise<boolean> => {
   try {
-    const verificationData = {
-      name: certificateData.name,
-      studentID: certificateData.studentID,
-      course: certificateData.course,
-      part: certificateData.part,
-      group: certificateData.group,
-      eventId: certificateData.eventId,
-      eventDate: certificateData.eventDate,
-      certificateTemplate: certificateData.certificateTemplate
-    };
+    // Step 1: Original Data
+    setVerificationSteps?.(prev => prev.map((step, i) => 
+      i === 0 ? { 
+        ...step, 
+        status: 'success',
+        details: JSON.stringify(certificateData, null, 2)
+      } : step
+    ));
 
-    console.log('Verification data structure:', JSON.stringify(verificationData, null, 2));
-    console.log('Verification data buffer:', new TextDecoder().decode(objectToArrayBuffer(verificationData)));
+    // Step 2: Calculate Data Hash
+    const dataBuffer = objectToArrayBuffer(certificateData);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    const originalHash = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+    
+    setVerificationSteps?.(prev => prev.map((step, i) => 
+      i === 1 ? { 
+        ...step, 
+        status: 'success',
+        details: `SHA-256 Hash: ${originalHash}`
+      } : step
+    ));
 
+    // Step 3: Show Digital Signature
+    setVerificationSteps?.(prev => prev.map((step, i) => 
+      i === 2 ? { 
+        ...step, 
+        status: 'success',
+        details: `Signature: ${signatureBase64}`
+      } : step
+    ));
+
+    // Step 4: Public Key Verification
     const publicKey = await importPublicKey(
       process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!
     );
 
-    const dataBuffer = objectToArrayBuffer(verificationData);
-    const signatureBuffer = str2ab(atob(signatureBase64));
+    setVerificationSteps?.(prev => prev.map((step, i) => 
+      i === 3 ? { 
+        ...step, 
+        status: 'success',
+        details: `Public Key: ${process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!.substring(0, 64)}...`
+      } : step
+    ));
 
-    return await window.crypto.subtle.verify(
+    // Step 5: Hash Comparison
+    const signatureBuffer = str2ab(atob(signatureBase64));
+    const isValid = await window.crypto.subtle.verify(
       {
         name: "ECDSA",
         hash: { name: "SHA-256" },
@@ -132,8 +166,26 @@ export const verifyCertificate = async (
       signatureBuffer,
       dataBuffer
     );
-  } catch (error) {
-    console.error('Error verifying signature:', error);
+
+    setVerificationSteps?.(prev => prev.map((step, i) => 
+      i === 4 ? { 
+        ...step, 
+        status: isValid ? 'success' : 'error',
+        details: isValid 
+          ? " Hashes match - Certificate is valid"
+          : " Hashes do not match - Certificate is invalid"
+      } : step
+    ));
+
+    return isValid;
+  } catch (err) {
+    console.error('Error verifying signature:', err);
+    const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+    setVerificationSteps?.(prev => prev.map(step => ({ 
+      ...step, 
+      status: 'error',
+      details: `Error: ${errorMessage}`
+    })));
     return false;
   }
 };
