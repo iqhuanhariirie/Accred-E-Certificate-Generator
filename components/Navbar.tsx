@@ -57,6 +57,13 @@ export const AdminNavbar = () => {
                 </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link href="/verify" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Verify Certificate
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
             
             <NavigationMenuItem>
               <button
@@ -134,6 +141,13 @@ export const GuestNavbar = () => {
               </Link>
             </NavigationMenuItem>
             ) : null}
+            <NavigationMenuItem>
+              <Link href="/verify" legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Verify Certificate
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
             <NavigationMenuItem>
               <Link href="/docs" legacyBehavior passHref>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()}>

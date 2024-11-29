@@ -224,6 +224,8 @@ const Certificate = ({
           </Page>
         </Document>
       </PDFViewer>
+
+      
     );
   }
 
