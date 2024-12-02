@@ -18,6 +18,46 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Certificate from "@/components/Certificate";
 import { verifyCertificate } from "@/utils/signatureUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import React from "react";
+
+// Add ErrorBoundary component here
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center w-full h-full">
+          <Card className="w-[400px]">
+            <CardHeader>
+              <CardTitle className="text-center text-destructive">
+                Error Loading Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center">
+                There was an error loading the certificate preview. Please try again.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 
 interface VerificationData {
   eventName: string;
@@ -182,8 +222,8 @@ export default function VerificationPage({ params }: { params: { id: string; cer
                   {data.eventName}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="overflow-y-auto" 
-              style={{ maxHeight: 'calc(100vh - 100px)' }}>
+              <CardContent className="overflow-y-auto"
+                style={{ maxHeight: 'calc(100vh - 100px)' }}>
                 {/* Certificate Details */}
                 <div className="grid grid-cols-2 gap-4 text-sm mb-8">
                   <div className="font-semibold">Event Date:</div>
@@ -218,32 +258,32 @@ export default function VerificationPage({ params }: { params: { id: string; cer
                   <h3 className="font-semibold text-lg mb-4">Digital Signature Verification Process</h3>
 
                   {verificationSteps.map((step, index) => (
-  <Alert 
-    key={index} 
-    variant={step.status === 'success' ? 'success' : 
-            step.status === 'error' ? 'destructive' : 
-            'default'}
-    className="mb-4"
-  >
-    <div className="flex items-center gap-3">
-      {step.status === 'success' && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-      {step.status === 'error' && <XCircle className="h-5 w-5 text-red-500" />}
-      {step.status === 'pending' && <div className="h-5 w-5 rounded-full border-2 border-gray-300" />}
-      {step.status === 'loading' && <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-black" />}
-      
-      <div className="w-full">
-        <AlertTitle>{step.title}</AlertTitle>
-        <AlertDescription>{step.description}</AlertDescription>
-        
-        {step.details && (
-          <div className="mt-2 p-2 bg-muted rounded-md text-xs font-mono overflow-x-auto">
-            {step.details}
-          </div>
-        )}
-      </div>
-    </div>
-  </Alert>
-))}
+                    <Alert
+                      key={index}
+                      variant={step.status === 'success' ? 'success' :
+                        step.status === 'error' ? 'destructive' :
+                          'default'}
+                      className="mb-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        {step.status === 'success' && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+                        {step.status === 'error' && <XCircle className="h-5 w-5 text-red-500" />}
+                        {step.status === 'pending' && <div className="h-5 w-5 rounded-full border-2 border-gray-300" />}
+                        {step.status === 'loading' && <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-black" />}
+
+                        <div className="w-full">
+                          <AlertTitle>{step.title}</AlertTitle>
+                          <AlertDescription>{step.description}</AlertDescription>
+
+                          {step.details && (
+                            <div className="mt-2 p-2 bg-muted rounded-md text-xs font-mono overflow-x-auto">
+                              {step.details}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Alert>
+                  ))}
 
                   {/* Final Verification Status */}
                   <Alert variant={isVerified ? "success" : "destructive"}>
@@ -271,23 +311,31 @@ export default function VerificationPage({ params }: { params: { id: string; cer
         </TabsContent>
 
         <TabsContent value="preview">
-          <div className="w-full h-[calc(100vh-200px)]">
-            {data && certificateTemplate && (
-              <Certificate
-                eventDate={data.eventDate}
-                certificateTemplate={certificateTemplate}
-                guestName={data.participantName}
-                studentID={data.studentId}
-                course={data.course}
-                part={data.part || 0}
-                group={data.group || ""}
-                signature={data.signature}
-                eventId={params.id}
-                certId={params.certId}
-                previewMode={true}
-              />
-            )}
-          </div>
+          <Card className="h-[calc(100vh-200px)]">
+            <CardContent className="p-0 h-full">
+              {data && certificateTemplate ? (
+                <ErrorBoundary>
+                  <Certificate
+                    eventDate={data.eventDate}
+                    certificateTemplate={certificateTemplate}
+                    guestName={data.participantName}
+                    studentID={data.studentId}
+                    course={data.course}
+                    part={data.part ?? 0}
+                    group={data.group ?? ""}
+                    signature={data.signature}
+                    eventId={params.id}
+                    certId={params.certId}
+                    previewMode={true}
+                  />
+                </ErrorBoundary>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <RingLoader />
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

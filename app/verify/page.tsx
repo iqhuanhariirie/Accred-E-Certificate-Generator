@@ -23,6 +23,10 @@ interface VerificationDetails {
   verificationDate: string;
   signaturePresent?: boolean;
   signature?: string;
+  contentIntegrity?: {
+    isValid: boolean;
+    message: string;
+  };
   error?: string;
 }
 
@@ -115,21 +119,44 @@ export default function VerifyPage() {
           {/* Digital Signature from metadata */}
           <div className="font-semibold">Digital Signature:</div>
           <div>
-          {details.signature ? (
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-              <span className="font-mono text-xs">
-                {`${details.signature.slice(0, 8)}...${details.signature.slice(-8)}`}
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <XCircle className="h-4 w-4 text-red-500" />
-              <span>Not found in metadata</span>
-            </div>
-          )}
-        </div>
-        
+            {details.signature ? (
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <span className="font-mono text-xs">
+                  {`${details.signature.slice(0, 8)}...${details.signature.slice(-8)}`}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-red-500" />
+                <span>Not found in metadata</span>
+              </div>
+            )}
+          </div>
+          {/* Content Integrity Status */}
+          <div className="font-semibold">Content Integrity:</div>
+          <div>
+            {details.contentIntegrity ? (
+              <div className="flex items-center gap-2">
+                {details.contentIntegrity.isValid ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span>Original content unchanged</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <span>Content has been modified</span>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <XCircle className="h-4 w-4 text-red-500" />
+                <span>Unable to verify content integrity</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -194,8 +221,12 @@ export default function VerifyPage() {
                     </AlertTitle>
                     <AlertDescription>
                       {verificationResult.isValid
-                        ? "This certificate is authentic and has not been tampered with."
+                        ? "This certificate is authentic, digitally signed and has not been tampered with."
                         : verificationResult.details.error || "This certificate could not be verified."}
+
+                      {verificationResult.details.contentIntegrity?.isValid === false && (
+                        <p className="text-sm">The certificate content appears to have been modified.</p>
+                      )}
                     </AlertDescription>
                   </div>
                 </div>

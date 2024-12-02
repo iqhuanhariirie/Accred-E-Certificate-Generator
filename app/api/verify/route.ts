@@ -1,69 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
+import { calculatePDFHash } from '@/utils/pdfUtils';
 import { verifySignatureServer } from '@/utils/serverVerificationUtils';
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('certificate') as File;
-
+    
     if (!file) {
-      return NextResponse.json(
-        { message: 'No certificate file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        isValid: false,
+        details: {
+          error: 'No certificate file provided',
+          verificationDate: new Date().toISOString(),
+        }
+      });
     }
-
+    
+    // Load the PDF and get metadata
     const buffer = await file.arrayBuffer();
     const pdfDoc = await PDFDocument.load(buffer);
-    
-    // Get metadata from PDF title
     const title = pdfDoc.getTitle();
     
     if (!title) {
       return NextResponse.json({
         isValid: false,
         details: {
-          error: 'No certificate metadata found in PDF',
+          error: 'No certificate metadata found',
           verificationDate: new Date().toISOString(),
         }
       });
     }
 
+    // Parse metadata
     try {
-      // Parse the metadata from the title
-      const certificateInfo = JSON.parse(title);
-      const { data, signature } = certificateInfo;
+      const metadata = JSON.parse(title);
+      const { data, signature, pdfHash: storedHash } = metadata;
 
-      if (!signature) {
-        return NextResponse.json({
-          isValid: false,
-          details: {
-            error: 'No signature found in certificate',
-            verificationDate: new Date().toISOString(),
-          }
-        });
-      }
+      // Create clean PDF without metadata
+      const pdfWithoutMetadata = await PDFDocument.load(buffer);
+      pdfWithoutMetadata.setTitle(''); // Remove metadata
+      const cleanPdfBytes = await pdfWithoutMetadata.save();
 
-      // Verify using server-side verification
-      const isValid = await verifySignatureServer(
-        data,
-        signature,
-        process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!
-      );
+      // Calculate hash of clean PDF
+      const currentHash = await calculatePDFHash(cleanPdfBytes);
+
+      // Verify signature
+      const isSignatureValid = signature ? 
+        await verifySignatureServer(data, signature, process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!) :
+        false;
+
+      // Compare hashes
+      const isPdfValid = storedHash === currentHash;
 
       return NextResponse.json({
-        isValid,
+        isValid: isSignatureValid && (storedHash ? isPdfValid : true),
         details: {
           certificateData: data,
           verificationDate: new Date().toISOString(),
-          signaturePresent: true,
+          signaturePresent: !!signature,
           signature: signature,
+          contentIntegrity: {
+            isValid: storedHash ? isPdfValid : false,
+            message: storedHash 
+              ? (isPdfValid ? 'PDF content is unchanged' : 'PDF has been modified')
+              : 'No content hash found'
+          }
         }
       });
-
     } catch (parseError) {
-      console.error('Error parsing certificate metadata:', parseError);
       return NextResponse.json({
         isValid: false,
         details: {
@@ -74,8 +80,8 @@ export async function POST(req: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Certificate verification error:', error);
-    return NextResponse.json({ 
+    console.error('Verification error:', error);
+    return NextResponse.json({
       isValid: false,
       details: {
         error: error instanceof Error ? error.message : 'Unknown error',
