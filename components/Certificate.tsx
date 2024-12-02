@@ -91,6 +91,21 @@ const Certificate = ({
     eventDate,
   ]);
 
+  // Create the metadata object
+  const certificateMetadata = {
+    data: {
+      name: guestName,
+      studentID: studentID,
+      course: course,
+      part: part,
+      group: group,
+      eventId: eventId,
+      eventDate: eventDate.toDate().toISOString(),
+      certificateTemplate: certificateTemplate
+    },
+    signature: signature
+  };
+
   if (imageSize.width === 0 || imageSize.height === 0 || !qrCodeUrl) {
     return null;
   }
@@ -166,11 +181,14 @@ const Certificate = ({
     },
   });
 
-  if (previewMode) {
-    return (
-      <PDFViewer width="100%" height="600px">
-        <Document>
-          <Page size={[width, height]} style={styles.page}>
+  // Create document component with metadata
+  const documentWithMetadata = (
+    <Document
+      title={JSON.stringify(certificateMetadata)} // Add metadata here
+      author="UITMKT-E-Certificate-Generator"
+      creator="UITMKT-E-Certificate-Generator"
+    >
+      <Page size={[width, height]} style={styles.page}>
             <View style={styles.wrapper}>
               <Image src={certificateTemplate} style={styles.image} />
               <View style={styles.textContainer}>
@@ -222,69 +240,20 @@ const Certificate = ({
               </View>
             </View>
           </Page>
-        </Document>
+    </Document>
+  );
+
+  if (previewMode) {
+    return (
+      <PDFViewer width="100%" height="600px">
+        {documentWithMetadata}
       </PDFViewer>
 
       
     );
   }
 
-  return (
-    <Document>
-      <Page size={[width, height]} style={styles.page}>
-        <View style={styles.wrapper}>
-          <Image src={certificateTemplate} style={styles.image} />
-          <View style={styles.textContainer}>
-            <View style={{ marginBottom: 20 }}>
-              <Text style={styles.text}>{guestName}</Text>
-            </View>
-            <View style={{ marginBottom: 20 }}>
-              <Text style={styles.text}>{studentID}</Text>
-            </View>
-            <View style={{ marginBottom: 20 }}>
-              <Text style={styles.text}>{course}</Text>
-            </View>
-            {part && (
-              <View style={{ marginBottom: 20 }}>
-                <Text style={styles.text}>Part {part}</Text>
-              </View>
-            )}
-            {group && (
-              <View style={{ marginBottom: 20 }}>
-                <Text style={styles.text}>{group}</Text>
-              </View>
-            )}
-            <View style={{ marginBottom: 20 }}>
-              <Text style={styles.text}>
-                {eventDate.toDate().toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.verificationContainer}>
-            {signature && (
-              <>
-                <Text style={styles.verificationStatusText}>
-                  Status: {isVerified ? "✓ Verified" : "⚠ Verification Pending"}
-                </Text>
-                <Text style={styles.signatureText}>
-                  Digital Signature: {signature.slice(0, 8)}...{signature.slice(-8)}
-                </Text>
-              </>
-            )}
-            <Image src={qrCodeUrl} style={styles.qrCode} />
-            <Text style={styles.verificationText}>
-              Scan to verify certificate authenticity
-            </Text>
-          </View>
-        </View>
-      </Page>
-    </Document>
-  );
+  return documentWithMetadata;
 };
 
 export default Certificate;

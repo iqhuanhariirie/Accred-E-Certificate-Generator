@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
-import { verifyCertificate } from '@/utils/signatureUtils';
+import { verifySignatureServer } from '@/utils/serverVerificationUtils';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,43 +17,70 @@ export async function POST(req: NextRequest) {
     const buffer = await file.arrayBuffer();
     const pdfDoc = await PDFDocument.load(buffer);
     
-    // Extract metadata from PDF
-    const metadata = pdfDoc.getTitle(); // Assuming we stored certificate data in PDF title
-    if (!metadata) {
-      throw new Error('No certificate metadata found in PDF');
-    }
-
-    // Parse the metadata
-    const certificateData = JSON.parse(metadata);
+    // Get metadata from PDF title
+    const title = pdfDoc.getTitle();
     
-    // Extract signature
-    const signature = certificateData.signature;
-    if (!signature) {
-      throw new Error('No signature found in certificate');
-    }
-
-    // Verify the certificate
-    const isValid = await verifyCertificate(certificateData.data, signature);
-
-    return NextResponse.json({
-      isValid,
-      details: {
-        certificateData: certificateData.data,
-        verificationDate: new Date().toISOString(),
-        signaturePresent: true,
-      }
-    });
-  } catch (error) {
-    console.error('Certificate verification error:', error);
-    return NextResponse.json(
-      { 
+    if (!title) {
+      return NextResponse.json({
         isValid: false,
         details: {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: 'No certificate metadata found in PDF',
           verificationDate: new Date().toISOString(),
         }
-      },
-      { status: 200 } // Still return 200 but with isValid: false
-    );
+      });
+    }
+
+    try {
+      // Parse the metadata from the title
+      const certificateInfo = JSON.parse(title);
+      const { data, signature } = certificateInfo;
+
+      if (!signature) {
+        return NextResponse.json({
+          isValid: false,
+          details: {
+            error: 'No signature found in certificate',
+            verificationDate: new Date().toISOString(),
+          }
+        });
+      }
+
+      // Verify using server-side verification
+      const isValid = await verifySignatureServer(
+        data,
+        signature,
+        process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!
+      );
+
+      return NextResponse.json({
+        isValid,
+        details: {
+          certificateData: data,
+          verificationDate: new Date().toISOString(),
+          signaturePresent: true,
+          signature: signature,
+        }
+      });
+
+    } catch (parseError) {
+      console.error('Error parsing certificate metadata:', parseError);
+      return NextResponse.json({
+        isValid: false,
+        details: {
+          error: 'Invalid certificate metadata format',
+          verificationDate: new Date().toISOString(),
+        }
+      });
+    }
+
+  } catch (error) {
+    console.error('Certificate verification error:', error);
+    return NextResponse.json({ 
+      isValid: false,
+      details: {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        verificationDate: new Date().toISOString(),
+      }
+    });
   }
 }

@@ -7,14 +7,34 @@ import { CheckCircle2, XCircle, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from 'react-hot-toast';
+import { sign } from 'crypto';
+
+interface VerificationDetails {
+  certificateData?: {
+    name: string;
+    studentID: string;
+    course: string;
+    part?: number;
+    group?: string;
+    eventId: string;
+    eventDate: string;
+    certificateTemplate: string;
+  };
+  verificationDate: string;
+  signaturePresent?: boolean;
+  signature?: string;
+  error?: string;
+}
+
+interface VerificationResponse {
+  isValid: boolean;
+  details: VerificationDetails;
+}
 
 export default function VerifyPage() {
   const [file, setFile] = useState<File | null>(null);
   const [verifying, setVerifying] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<{
-    isValid: boolean;
-    details: any;
-  } | null>(null);
+  const [verificationResult, setVerificationResult] = useState<VerificationResponse | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -39,17 +59,13 @@ export default function VerifyPage() {
         body: formData
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Verification failed');
-      }
+      const result: VerificationResponse = await response.json();
 
       setVerificationResult(result);
       if (result.isValid) {
         toast.success('Certificate verified successfully!');
       } else {
-        toast.error('Invalid certificate');
+        toast.error(result.details.error || 'Invalid certificate');
       }
     } catch (error) {
       console.error('Verification error:', error);
@@ -57,6 +73,66 @@ export default function VerifyPage() {
     } finally {
       setVerifying(false);
     }
+  };
+
+  const renderCertificateDetails = (details: VerificationDetails) => {
+    if (!details.certificateData) return null;
+
+    const { certificateData } = details;
+    return (
+      <div className="space-y-4">
+        <h3 className="font-semibold text-lg">Certificate Details</h3>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="font-semibold">Name:</div>
+          <div>{certificateData.name}</div>
+
+          <div className="font-semibold">Student ID:</div>
+          <div>{certificateData.studentID}</div>
+
+          <div className="font-semibold">Course:</div>
+          <div>{certificateData.course}</div>
+
+          {certificateData.part && (
+            <>
+              <div className="font-semibold">Part:</div>
+              <div>{certificateData.part}</div>
+            </>
+          )}
+
+          {certificateData.group && (
+            <>
+              <div className="font-semibold">Group:</div>
+              <div>{certificateData.group}</div>
+            </>
+          )}
+
+          <div className="font-semibold">Event Date:</div>
+          <div>{new Date(certificateData.eventDate).toLocaleDateString()}</div>
+
+          <div className="font-semibold">Verification Date:</div>
+          <div>{new Date(details.verificationDate).toLocaleDateString()}</div>
+
+          {/* Digital Signature from metadata */}
+          <div className="font-semibold">Digital Signature:</div>
+          <div>
+          {details.signature ? (
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="font-mono text-xs">
+                {`${details.signature.slice(0, 8)}...${details.signature.slice(-8)}`}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-red-500" />
+              <span>Not found in metadata</span>
+            </div>
+          )}
+        </div>
+        
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -119,25 +195,14 @@ export default function VerifyPage() {
                     <AlertDescription>
                       {verificationResult.isValid
                         ? "This certificate is authentic and has not been tampered with."
-                        : "This certificate could not be verified or may have been tampered with."}
+                        : verificationResult.details.error || "This certificate could not be verified."}
                     </AlertDescription>
                   </div>
                 </div>
               </Alert>
 
-              {/* Verification Details */}
-              {verificationResult.details && (
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Verification Details</h3>
-                  <div className="space-y-2">
-                    <div className="p-4 bg-muted rounded-lg">
-                      <pre className="text-xs overflow-x-auto">
-                        {JSON.stringify(verificationResult.details, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Certificate Details */}
+              {verificationResult.isValid && renderCertificateDetails(verificationResult.details)}
             </div>
           )}
         </CardContent>
