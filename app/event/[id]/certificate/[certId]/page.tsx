@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { db } from "@/firebase/config";
 import { doc, getDoc } from "firebase/firestore";
 import { RingLoader } from "@/components/RingLoader";
@@ -19,6 +19,8 @@ import Certificate from "@/components/Certificate";
 import { verifyCertificate } from "@/utils/signatureUtils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import React from "react";
+import { CertificateRef } from "@/components/Certificate";
+import DownloadCertificateButton from "@/components/DownloadCertificateButton";
 
 // Add ErrorBoundary component here
 class ErrorBoundary extends React.Component<
@@ -83,6 +85,7 @@ export default function VerificationPage({ params }: { params: { id: string; cer
   const [error, setError] = useState<string | null>(null);
   const [certificateTemplate, setCertificateTemplate] = useState<string>("");
   const [isVerified, setIsVerified] = useState(false);
+  const certificateRef = useRef<CertificateRef>(null);
   const [verificationSteps, setVerificationSteps] = useState<VerificationStep[]>([
     {
       title: "Original Data",
@@ -312,22 +315,31 @@ export default function VerificationPage({ params }: { params: { id: string; cer
 
         <TabsContent value="preview">
           <Card className="h-[calc(100vh-200px)]">
-            <CardContent className="p-0 h-full">
+            <CardContent className="p-0 h-full relative">
               {data && certificateTemplate ? (
                 <ErrorBoundary>
-                  <Certificate
-                    eventDate={data.eventDate}
-                    certificateTemplate={certificateTemplate}
-                    guestName={data.participantName}
-                    studentID={data.studentId}
-                    course={data.course}
-                    part={data.part ?? 0}
-                    group={data.group ?? ""}
-                    signature={data.signature}
-                    eventId={params.id}
-                    certId={params.certId}
-                    previewMode={true}
-                  />
+                  <div className="h-full">
+                    <Certificate
+                      ref={certificateRef}
+                      eventDate={data.eventDate}
+                      certificateTemplate={certificateTemplate}
+                      guestName={data.participantName}
+                      studentID={data.studentId}
+                      course={data.course}
+                      part={data.part ?? 0}
+                      group={data.group ?? ""}
+                      signature={data.signature}
+                      eventId={params.id}
+                      certId={params.certId}
+                      previewMode={true}
+                    />
+                    <div className="absolute bottom-4 right-4">
+                      <DownloadCertificateButton
+                        onDownload={() => certificateRef.current!.generatePDFWithHash()}
+                        filename={`certificate-${params.certId}`}
+                      />
+                    </div>
+                  </div>
                 </ErrorBoundary>
               ) : (
                 <div className="flex items-center justify-center h-full">

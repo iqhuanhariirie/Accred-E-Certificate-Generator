@@ -11,40 +11,41 @@ export async function POST(req: NextRequest) {
     if (!file) {
       return NextResponse.json({
         isValid: false,
-        details: {
-          error: 'No certificate file provided',
-          verificationDate: new Date().toISOString(),
-        }
+        details: { error: 'No certificate file provided' }
       });
     }
     
-    // Load the PDF and get metadata
     const buffer = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(buffer);
-    const title = pdfDoc.getTitle();
+
+    // Get metadata from full version
+    const fullPdfDoc = await PDFDocument.load(buffer);
+    const title = fullPdfDoc.getTitle();
     
     if (!title) {
       return NextResponse.json({
         isValid: false,
-        details: {
-          error: 'No certificate metadata found',
-          verificationDate: new Date().toISOString(),
-        }
+        details: { error: 'No certificate metadata found' }
       });
     }
 
-    // Parse metadata
     try {
       const metadata = JSON.parse(title);
       const { data, signature, pdfHash: storedHash } = metadata;
 
-      // Create clean PDF without metadata
-      const pdfWithoutMetadata = await PDFDocument.load(buffer);
-      pdfWithoutMetadata.setTitle(''); // Remove metadata
-      const cleanPdfBytes = await pdfWithoutMetadata.save();
+      const originalSize = buffer.byteLength;
+      // Calculate hash of original content
+      const currentHash = await calculatePDFHash(buffer);
 
-      // Calculate hash of clean PDF
-      const currentHash = await calculatePDFHash(cleanPdfBytes);
+      console.log('Verification details:', {
+        storedHash,
+        currentHash,
+        originalPdfSize: originalSize,
+        hasMetadata: !!title,
+        metadataLength: title?.length ?? 0
+      });
+
+      console.log('Stored hash:', storedHash);
+      console.log('Current hash:', currentHash);
 
       // Verify signature
       const isSignatureValid = signature ? 
@@ -63,30 +64,26 @@ export async function POST(req: NextRequest) {
           signature: signature,
           contentIntegrity: {
             isValid: storedHash ? isPdfValid : false,
-            message: storedHash 
+            storedHash,
+            currentHash,
+            message: storedHash === currentHash 
               ? (isPdfValid ? 'PDF content is unchanged' : 'PDF has been modified')
               : 'No content hash found'
           }
         }
       });
     } catch (parseError) {
+      console.error('Metadata parsing error:', parseError);
       return NextResponse.json({
         isValid: false,
-        details: {
-          error: 'Invalid certificate metadata format',
-          verificationDate: new Date().toISOString(),
-        }
+        details: { error: 'Invalid certificate metadata format' }
       });
     }
-
   } catch (error) {
     console.error('Verification error:', error);
     return NextResponse.json({
       isValid: false,
-      details: {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        verificationDate: new Date().toISOString(),
-      }
+      details: { error: 'Verification failed' }
     });
   }
 }
