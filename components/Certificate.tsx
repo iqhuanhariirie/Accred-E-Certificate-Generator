@@ -170,8 +170,11 @@ const Certificate = forwardRef<CertificateRef, CertificateProps>(({
   const generatePDFWithHash = async () => {
     setIsGeneratingHash(true);
     try {
-      // 1. Generate basic PDF without metadata using react-pdf
-      const basicDoc = (
+      // 1. Generate basic PDF without metadata
+      const basicDoc = await PDFDocument.create();
+      
+      // Create the PDF content using react-pdf
+      const doc = (
         <Document>
           <Page size={[imageSize.width, imageSize.height]} style={styles.page}>
             {createDocumentContent(styles)}
@@ -179,13 +182,28 @@ const Certificate = forwardRef<CertificateRef, CertificateProps>(({
         </Document>
       );
       
-      const basicPdfBlob = await pdf(basicDoc).toBlob();
-      const hash = await calculatePDFHash(await basicPdfBlob.arrayBuffer());
-
-      // 2. Load the basic PDF in pdf-lib for metadata
-      const pdfDoc = await PDFDocument.load(await basicPdfBlob.arrayBuffer());
+      // Generate initial PDF
+      const initialPdfBlob = await pdf(doc).toBlob();
+      const initialPdfBytes = await initialPdfBlob.arrayBuffer();
       
-      // 3. Add metadata as incremental update
+      // Load it into PDFDocument
+      const tempDoc = await PDFDocument.load(initialPdfBytes);
+      const [page] = await basicDoc.copyPages(tempDoc, [0]);
+      basicDoc.addPage(page);
+      
+      // Save basic PDF with consistent options
+      const basicPdfBytes = await basicDoc.save({
+        useObjectStreams: false,
+        addDefaultPage: false,
+      });
+      
+      // Calculate hash of basic PDF
+      const hash = await calculatePDFHash(basicPdfBytes);
+  
+      // Create final PDF with metadata
+      const finalDoc = await PDFDocument.load(basicPdfBytes);
+      
+      // Add metadata
       const metadata = {
         data: {
           name: guestName,
@@ -201,16 +219,25 @@ const Certificate = forwardRef<CertificateRef, CertificateProps>(({
         pdfHash: hash,
         version: "1.0"
       };
-
-      pdfDoc.setTitle(JSON.stringify(metadata));
+  
+      finalDoc.setTitle(JSON.stringify(metadata));
       
-      // 4. Save with incremental updates
-      const finalPdfBytes = await pdfDoc.save({ 
+      // Save final PDF
+      const finalPdfBytes = await finalDoc.save({
         useObjectStreams: false,
         addDefaultPage: false,
-        updateFieldAppearances: false,
       });
-
+  
+      console.log('Generation details:', {
+        hash,
+        basicPdfSize: basicPdfBytes.byteLength,
+        finalPdfSize: finalPdfBytes.byteLength,
+        metadata: {
+          ...metadata,
+          signature: signature ? `${signature.slice(0, 8)}...${signature.slice(-8)}` : null
+        }
+      });
+  
       return { 
         pdfBlob: new Blob([finalPdfBytes], { type: 'application/pdf' }), 
         hash 

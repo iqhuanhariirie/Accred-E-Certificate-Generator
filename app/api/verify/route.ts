@@ -17,9 +17,9 @@ export async function POST(req: NextRequest) {
     
     const buffer = await file.arrayBuffer();
 
-    // Get metadata from full version
-    const fullPdfDoc = await PDFDocument.load(buffer);
-    const title = fullPdfDoc.getTitle();
+    // First, load PDF and get metadata
+    const pdfDoc = await PDFDocument.load(buffer);
+    const title = pdfDoc.getTitle();
     
     if (!title) {
       return NextResponse.json({
@@ -32,43 +32,54 @@ export async function POST(req: NextRequest) {
       const metadata = JSON.parse(title);
       const { data, signature, pdfHash: storedHash } = metadata;
 
-      const originalSize = buffer.byteLength;
-      // Calculate hash of original content
-      const currentHash = await calculatePDFHash(buffer);
+      // Get PDF data without metadata
+      const strippedPdf = await PDFDocument.create();
+      const [page] = await strippedPdf.copyPages(pdfDoc, [0]);
+      strippedPdf.addPage(page);
+
+      // Save with consistent options
+      const strippedPdfBytes = await strippedPdf.save({
+        useObjectStreams: false,
+        addDefaultPage: false,
+      });
+
+      // Calculate hash of stripped PDF
+      const currentHash = await calculatePDFHash(strippedPdfBytes);
 
       console.log('Verification details:', {
         storedHash,
         currentHash,
-        originalPdfSize: originalSize,
+        originalSize: buffer.byteLength,
+        strippedSize: strippedPdfBytes.byteLength,
         hasMetadata: !!title,
-        metadataLength: title?.length ?? 0
+        metadataLength: title?.length ?? 0,
+        metadata: {
+          ...metadata,
+          signature: signature ? `${signature.slice(0, 8)}...${signature.slice(-8)}` : null
+        }
       });
-
-      console.log('Stored hash:', storedHash);
-      console.log('Current hash:', currentHash);
 
       // Verify signature
       const isSignatureValid = signature ? 
         await verifySignatureServer(data, signature, process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!) :
         false;
 
-      // Compare hashes
-      const isPdfValid = storedHash === currentHash;
-
       return NextResponse.json({
-        isValid: isSignatureValid && (storedHash ? isPdfValid : true),
+        isValid: isSignatureValid && storedHash === currentHash,
         details: {
           certificateData: data,
           verificationDate: new Date().toISOString(),
           signaturePresent: !!signature,
           signature: signature,
           contentIntegrity: {
-            isValid: storedHash ? isPdfValid : false,
+            isValid: storedHash === currentHash,
             storedHash,
             currentHash,
+            originalSize: buffer.byteLength,
+            strippedSize: strippedPdfBytes.byteLength,
             message: storedHash === currentHash 
-              ? (isPdfValid ? 'PDF content is unchanged' : 'PDF has been modified')
-              : 'No content hash found'
+              ? 'PDF content is unchanged' 
+              : 'PDF has been modified'
           }
         }
       });
