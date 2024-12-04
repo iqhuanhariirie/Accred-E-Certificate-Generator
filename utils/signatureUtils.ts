@@ -134,11 +134,15 @@ export const verifyCertificate = async (
     ));
 
     // Step 3: Show Digital Signature
+
+    const partialSignature = signatureBase64.length > 16 
+      ? `${signatureBase64.slice(0, 8)}...${signatureBase64.slice(-8)}`
+      : signatureBase64;
     setVerificationSteps?.(prev => prev.map((step, i) => 
       i === 2 ? { 
         ...step, 
         status: 'success',
-        details: `Signature: ${signatureBase64}`
+        details: `Signature: ${partialSignature}`
       } : step
     ));
 
@@ -151,7 +155,7 @@ export const verifyCertificate = async (
       i === 3 ? { 
         ...step, 
         status: 'success',
-        details: `Public Key: ${process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!.substring(0, 64)}...`
+        details: `Public Key: ${process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!}`
       } : step
     ));
 

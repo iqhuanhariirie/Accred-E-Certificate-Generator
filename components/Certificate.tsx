@@ -170,10 +170,8 @@ const Certificate = forwardRef<CertificateRef, CertificateProps>(({
   const generatePDFWithHash = async () => {
     setIsGeneratingHash(true);
     try {
-      // 1. Generate basic PDF without metadata
-      const basicDoc = await PDFDocument.create();
-      
-      // Create the PDF content using react-pdf
+      // 1. Generate initial PDF with react-pdf
+      console.log('Starting PDF generation...');
       const doc = (
         <Document>
           <Page size={[imageSize.width, imageSize.height]} style={styles.page}>
@@ -182,28 +180,38 @@ const Certificate = forwardRef<CertificateRef, CertificateProps>(({
         </Document>
       );
       
-      // Generate initial PDF
       const initialPdfBlob = await pdf(doc).toBlob();
       const initialPdfBytes = await initialPdfBlob.arrayBuffer();
+
+      console.log('Initial PDF generation details:', {
+        stage: 'initial',
+        size: initialPdfBytes.byteLength,
+      });
       
-      // Load it into PDFDocument
+      // 2. Create standardized PDF
+      const basicDoc = await PDFDocument.create();
       const tempDoc = await PDFDocument.load(initialPdfBytes);
       const [page] = await basicDoc.copyPages(tempDoc, [0]);
       basicDoc.addPage(page);
       
-      // Save basic PDF with consistent options
+      // Save with deterministic options
       const basicPdfBytes = await basicDoc.save({
         useObjectStreams: false,
         addDefaultPage: false,
+        updateFieldAppearances: false
       });
       
-      // Calculate hash of basic PDF
-      const hash = await calculatePDFHash(basicPdfBytes);
+      // Calculate hash of standardized PDF
+      const beforeMetadatahash = await calculatePDFHash(basicPdfBytes.buffer);
+
+      console.log('Basic PDF generation details:', {
+        stage: 'standardized',
+        size: basicPdfBytes.byteLength,
+        beforeMetadatahash,
+      });
   
       // Create final PDF with metadata
       const finalDoc = await PDFDocument.load(basicPdfBytes);
-      
-      // Add metadata
       const metadata = {
         data: {
           name: guestName,
@@ -216,22 +224,28 @@ const Certificate = forwardRef<CertificateRef, CertificateProps>(({
           certificateTemplate: certificateTemplate
         },
         signature: signature,
-        pdfHash: hash,
+        pdfHash: beforeMetadatahash,
         version: "1.0"
       };
   
       finalDoc.setTitle(JSON.stringify(metadata));
-      
-      // Save final PDF
       const finalPdfBytes = await finalDoc.save({
         useObjectStreams: false,
         addDefaultPage: false,
+        updateFieldAppearances: false
       });
-  
-      console.log('Generation details:', {
-        hash,
-        basicPdfSize: basicPdfBytes.byteLength,
-        finalPdfSize: finalPdfBytes.byteLength,
+
+      // Calculate hash of final PDF (with metadata)
+    const finalHash = await calculatePDFHash(finalPdfBytes);
+
+      console.log('Final PDF generation details:', {
+        stage: 'final',
+        initialSize: initialPdfBytes.byteLength,
+        basicSize: basicPdfBytes.byteLength,
+        finalSize: finalPdfBytes.byteLength,
+        beforeMetadatahash,
+
+        finalHash,
         metadata: {
           ...metadata,
           signature: signature ? `${signature.slice(0, 8)}...${signature.slice(-8)}` : null
@@ -240,7 +254,7 @@ const Certificate = forwardRef<CertificateRef, CertificateProps>(({
   
       return { 
         pdfBlob: new Blob([finalPdfBytes], { type: 'application/pdf' }), 
-        hash 
+        hash: finalHash 
       };
     } catch (error) {
       console.error('Error generating PDF:', error);
