@@ -3,19 +3,6 @@ import { PDFDocument } from 'pdf-lib';
 import { calculatePDFHash } from '@/utils/pdfUtils';
 import { verifySignatureServer } from '@/utils/serverVerificationUtils';
 
-async function createStandardizedPDF(sourceBuffer: ArrayBuffer) {
-  const basicDoc = await PDFDocument.create();
-  const sourceDoc = await PDFDocument.load(sourceBuffer);
-  const [page] = await basicDoc.copyPages(sourceDoc, [0]);
-  basicDoc.addPage(page);
-  
-  return await basicDoc.save({
-    useObjectStreams: false,
-    addDefaultPage: false,
-    updateFieldAppearances: false
-  });
-}
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -30,7 +17,7 @@ export async function POST(req: NextRequest) {
     
     const buffer = await file.arrayBuffer();
 
-    // First, load PDF and get metadata
+    // Load PDF and get metadata
     const pdfDoc = await PDFDocument.load(buffer);
     const title = pdfDoc.getTitle();
     
@@ -45,16 +32,14 @@ export async function POST(req: NextRequest) {
       const metadata = JSON.parse(title);
       const { data, signature, pdfHash: storedHash } = metadata;
 
-      // Create standardized version of the PDF
-      const standardizedPdfBytes = await createStandardizedPDF(buffer);
-      const currentHash = await calculatePDFHash(standardizedPdfBytes.buffer);
+      // Calculate current hash of the PDF
+      const currentHash = await calculatePDFHash(buffer);
 
       console.log('Verification details:', {
-        stage: 'standardization',
-        storedHash,
-        currentHash,
-        originalSize: buffer.byteLength,
-        standardizedSize: standardizedPdfBytes.byteLength,
+        stage: 'hash verification',
+        storedHash,    // Reference hash from before metadata was added
+        currentHash,   // Current hash of complete PDF
+        fileSize: buffer.byteLength,
         hasMetadata: !!title,
         metadataLength: title?.length ?? 0,
         metadata: {
@@ -63,27 +48,24 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      // Verify signature
+      // Verify signature of certificate data
       const isSignatureValid = signature ? 
         await verifySignatureServer(data, signature, process.env.NEXT_PUBLIC_CERTIFICATE_PUBLIC_KEY!) :
         false;
 
       return NextResponse.json({
-        isValid: isSignatureValid && storedHash === currentHash,
+        isValid: isSignatureValid,
         details: {
           certificateData: data,
           verificationDate: new Date().toISOString(),
           signaturePresent: !!signature,
           signature: signature,
           contentIntegrity: {
-            isValid: storedHash === currentHash,
-            storedHash,
+            referenceHash: storedHash,
             currentHash,
-            originalSize: buffer.byteLength,
-            standardizedSize: standardizedPdfBytes.byteLength,
-            message: storedHash === currentHash 
-              ? 'PDF content is unchanged' 
-              : 'PDF has been modified'
+            message: isSignatureValid 
+              ? 'Certificate data is authentic'
+              : 'Certificate data has been tampered'
           }
         }
       });
